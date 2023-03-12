@@ -1,4 +1,12 @@
 {
   "version": 1,
-  "deployAliases": {}
+  "deployAliases": {},
+  "networks": {
+    "berkeley": {
+      "url": "https://berkeley.minascan.io/graphql",
+      "keyPath": "keys/berkeley.json",
+      "fee": "0.1",
+      "smartContract": "SudokuZkApp"
+    }
+  }
 }
