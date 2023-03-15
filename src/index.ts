@@ -1,3 +1,3 @@
-import { MinadoTestApp } from './minado.js';
+import { MinadoTestApp } from './MinadoTestApp.js';
 
 export { MinadoTestApp };

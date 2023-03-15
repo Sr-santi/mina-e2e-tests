@@ -9,7 +9,7 @@
  * Build the project: `$ npm run build`
  * Run with node:     `$ node build/src/run.js`.
  */
-import { MinadoTestApp } from './minado.js';
+import { MinadoTestApp } from './MinadoTestApp';
 import { AccountUpdate, Mina, PrivateKey, shutdown } from 'snarkyjs';
 
 // setup

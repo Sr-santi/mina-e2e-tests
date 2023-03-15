@@ -11,15 +11,23 @@ import {
   Circuit,
   PublicKey,
   MerkleTree,
+  PrivateKey,
 } from 'snarkyjs';
 
-export { MinadoTestApp };
+export { MinadoTestApp, minadoPk, minadoPrivK };
 
 await isReady;
 
 let initialIndex: Field = new Field(0n);
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
+let minadoPk = PublicKey.fromBase58(
+  'QZdFjCVCJe5h8bJ2KbmfVLZnXQrk5dJhPH5r32G3YFTeRmkzrWQv1ks5fKhQ48TCkQFaS64upan'
+);
+console.log();
+let minadoPrivK = PrivateKey.fromBase58(
+  'HdiuzQnRNy7usxKyoeSg9rVpVoEqBTF627ZqqjisHAUyzuZtDyzPBg2wF6MGtvghfydusUr'
+);
 
 class MinadoTestApp extends SmartContract {
   @state(Field) test = State<Field>();
