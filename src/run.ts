@@ -30,6 +30,7 @@ await MinadoTestApp.compile();
 let tx = await Mina.transaction(sender, () => {
   AccountUpdate.fundNewAccount(sender);
   zkApp.deploy();
+  console.log('Wallet funded succesfully');
 });
 await tx.prove();
 await tx.sign([zkAppPrivateKey, senderKey]).send();
