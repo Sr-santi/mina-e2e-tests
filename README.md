@@ -57,7 +57,7 @@ Events correctly emitted
 
 # Notes
 
-I am planning on using a recursive version of my multisig-app I built a few months back (was never released though) and expand and polish it. I estimate this app can cover Surface Areas 1, 4, 5, 7 and 8. The second one zkApp will be a simple lending zkApp. It allows users to deposit and lend different custom tokens and it will use actions for concurrency and use calls between contracts to compose the platform contracts and token-managing contracts. This zkApp will be able to cover the remaning SAs 2, 3, 6, 9 and also cover parts of 4, 5, 7 and 8 again. If you do not see these ideas as a good fit - I am pretty flexible on these and propose new ideas which might cover the topics better.
+We are planning on using a recursive version of our Minado past implementatio. We estimate this app can cover all Surface Areas. 
 
 
 ## Usage
