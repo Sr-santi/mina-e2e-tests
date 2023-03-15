@@ -1,5 +1,5 @@
 {
-  "name": "sudoku",
+  "name": "minado",
   "version": "0.1.0",
   "description": "",
   "author": "",
@@ -47,5 +47,8 @@
   },
   "peerDependencies": {
     "snarkyjs": "0.9.*"
+  },
+  "dependencies": {
+    "zkapp-cli": "^0.7.4"
   }
 }

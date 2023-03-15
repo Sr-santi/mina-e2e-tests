@@ -1,3 +1,4 @@
-import { MinadoTestApp } from './MinadoTestApp.js';
+import { test } from './MinadoTestApp.js';
+import { second } from './second.js';
 
-export { MinadoTestApp };
+export { test,second };

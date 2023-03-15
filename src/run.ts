@@ -9,33 +9,52 @@
  * Build the project: `$ npm run build`
  * Run with node:     `$ node build/src/run.js`.
  */
-import { MinadoTestApp } from './MinadoTestApp';
-import { AccountUpdate, Mina, PrivateKey, shutdown } from 'snarkyjs';
+import { test } from './MinadoTestApp.js';
+import { AccountUpdate, Mina, PrivateKey, PublicKey, shutdown } from 'snarkyjs';
 
 // setup
-const Local = Mina.LocalBlockchain();
-Mina.setActiveInstance(Local);
-
-const { privateKey: senderKey, publicKey: sender } = Local.testAccounts[0];
+// const Local = Mina.LocalBlockchain();
+// Mina.setActiveInstance(Local);
+const dev = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql')
+Mina.setActiveInstance(dev)
+// const { privateKey: senderKey, publicKey: sender } = Local.testAccounts[0];
 
 //ZK APP setup
 const zkAppPrivateKey = PrivateKey.random();
 const zkAppAddress = zkAppPrivateKey.toPublicKey();
 
 // create an instance of the smart contract
-const zkApp = new MinadoTestApp(zkAppAddress);
-
+const zkApp = new test(zkAppAddress);
+//Keys 
+let minadoPk = PublicKey.fromBase58(
+  'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
+);
+console.log();
+let minadoPrivK = PrivateKey.fromBase58(
+  'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
+);
+console.log('THIS IS MY FUCKING ADDRESS',zkAppAddress)
 console.log('Deploying and initializing Minado Test App...');
-await MinadoTestApp.compile();
-let tx = await Mina.transaction(sender, () => {
-  AccountUpdate.fundNewAccount(sender);
-  zkApp.deploy();
-  console.log('Wallet funded succesfully');
-});
-await tx.prove();
-await tx.sign([zkAppPrivateKey, senderKey]).send();
-console.log('Deploy done');
+let { verificationKey } = await test.compile();
 
+// let tx = await Mina.transaction(sender, () => {
+//   AccountUpdate.fundNewAccount(sender);
+//   zkApp.deploy();
+//   console.log('Wallet funded succesfully');
+// });
+// await tx.prove();
+// await tx.sign([zkAppPrivateKey, senderKey]).send();
+// console.log('Deploy done');
+
+let defaultFee =100_000_000
+let deployTx = await Mina.transaction({sender:minadoPk, fee: defaultFee}, () => {
+  // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
+  zkApp.deploy({ zkappKey: zkAppPrivateKey });
+});
+await deployTx.prove();
+await deployTx.sign([zkAppPrivateKey, minadoPrivK]).send();
+console.log(`DEPLOYED AT => ${zkAppAddress.toBase58()}`)
+// console.log('Deploy done');
 // try {
 //   let tx = await Mina.transaction(sender, () => {
 //     zkApp.submitSolution(Sudoku.from(sudoku), Sudoku.from(noSolution));

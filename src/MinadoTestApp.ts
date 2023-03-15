@@ -12,24 +12,18 @@ import {
   PublicKey,
   MerkleTree,
   PrivateKey,
+  DeployArgs,
 } from 'snarkyjs';
 
-export { MinadoTestApp, minadoPk, minadoPrivK };
 
 await isReady;
 
 let initialIndex: Field = new Field(0n);
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
-let minadoPk = PublicKey.fromBase58(
-  'QZdFjCVCJe5h8bJ2KbmfVLZnXQrk5dJhPH5r32G3YFTeRmkzrWQv1ks5fKhQ48TCkQFaS64upan'
-);
-console.log();
-let minadoPrivK = PrivateKey.fromBase58(
-  'HdiuzQnRNy7usxKyoeSg9rVpVoEqBTF627ZqqjisHAUyzuZtDyzPBg2wF6MGtvghfydusUr'
-);
 
-class MinadoTestApp extends SmartContract {
+
+export class test extends SmartContract {
   @state(Field) test = State<Field>();
   // @state(Field) merkleTreeVariable = State<MerkleTree>();
   @state(Field) merkleTreeRoot = State<Field>();
@@ -51,55 +45,58 @@ class MinadoTestApp extends SmartContract {
     this.merkleTreeRoot.set(merkleRoot);
   }
 
+  deploy(args: DeployArgs) {
+    super.deploy(args);
+  }
   @method update() {
     this.test.set(Field(0));
   }
   //Everytime a commitment is added to the deposit an event will be emited
-  @method updateMerkleTree(commitment: Field) {
-    console.log('Updating the Merkle Tree .....');
+  // @method updateMerkleTree(commitment: Field) {
+  //   console.log('Updating the Merkle Tree .....');
 
-    /**
-     * Getting Merkle Tree State in the contract
-     */
-    let merkleTreeRoot = this.merkleTreeRoot.get();
-    this.merkleTreeRoot.assertEquals(merkleTreeRoot);
-    let lastIndex = this.lastIndexAdded.get();
-    this.lastIndexAdded.assertEquals(lastIndex);
-    let lastIndexFormated = lastIndex.toBigInt();
-    console.log(
-      'Index where the commitment will be inserted ',
-      lastIndexFormated
-    );
+  //   /**
+  //    * Getting Merkle Tree State in the contract
+  //    */
+  //   let merkleTreeRoot = this.merkleTreeRoot.get();
+  //   this.merkleTreeRoot.assertEquals(merkleTreeRoot);
+  //   let lastIndex = this.lastIndexAdded.get();
+  //   this.lastIndexAdded.assertEquals(lastIndex);
+  //   let lastIndexFormated = lastIndex.toBigInt();
+  //   console.log(
+  //     'Index where the commitment will be inserted ',
+  //     lastIndexFormated
+  //   );
 
-    //Modifying the Merkle Tree, inserting the commitment
+  //   //Modifying the Merkle Tree, inserting the commitment
 
-    minadoMerkleTree.setLeaf(lastIndexFormated, commitment);
-    let newMerkleTree = minadoMerkleTree;
-    let newMerkleTreeRoot = newMerkleTree.getRoot();
-    //Validating that the root is valid
-    newMerkleTreeRoot.assertEquals(newMerkleTree.getRoot());
+  //   minadoMerkleTree.setLeaf(lastIndexFormated, commitment);
+  //   let newMerkleTree = minadoMerkleTree;
+  //   let newMerkleTreeRoot = newMerkleTree.getRoot();
+  //   //Validating that the root is valid
+  //   newMerkleTreeRoot.assertEquals(newMerkleTree.getRoot());
 
-    //Updating the Merkle Tree root
-    this.merkleTreeRoot.set(newMerkleTreeRoot);
+  //   //Updating the Merkle Tree root
+  //   this.merkleTreeRoot.set(newMerkleTreeRoot);
 
-    // Updating the index variable
-    let newIndex = lastIndex.add(new Field(1));
-    console.log('New index', newIndex.toBigInt());
-    newIndex.assertEquals(lastIndex.add(new Field(1)));
-    this.lastIndexAdded.set(newIndex);
+  //   // Updating the index variable
+  //   let newIndex = lastIndex.add(new Field(1));
+  //   console.log('New index', newIndex.toBigInt());
+  //   newIndex.assertEquals(lastIndex.add(new Field(1)));
+  //   this.lastIndexAdded.set(newIndex);
 
-    //Emiting a deposit event
-    console.log('Emiting event.....');
-    let deposit = {
-      commitment: commitment,
-      leafIndex: lastIndex,
-      //TODO: CHANGE
-      timeStamp: new Field(2),
-    };
-    this.emitEvent('deposit', deposit);
-    console.log('=>>>>>>SEEEE EVENT EMITED');
-    console.log(deposit);
+  //   //Emiting a deposit event
+  //   console.log('Emiting event.....');
+  //   let deposit = {
+  //     commitment: commitment,
+  //     leafIndex: lastIndex,
+  //     //TODO: CHANGE
+  //     timeStamp: new Field(2),
+  //   };
+  //   this.emitEvent('deposit', deposit);
+  //   console.log('=>>>>>>SEEEE EVENT EMITED');
+  //   console.log(deposit);
 
-    // this.emitNullifierEvent(Field(1))
-  }
+  //   // this.emitNullifierEvent(Field(1))
+  // }
 }

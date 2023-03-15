@@ -1,4 +1,35 @@
 {
   "version": 1,
-  "deployAliases": {}
+  "networks": {
+    "s": {
+      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
+      "keyPath": "keys/s.json",
+      "fee": "0.1",
+      "smartContract": "MinadoTestApp"
+    },
+    "berkley": {
+      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
+      "keyPath": "keys/berkley.json",
+      "fee": "0.1",
+      "smartContract": "test"
+    },
+    "test": {
+      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
+      "keyPath": "keys/test.json",
+      "fee": "0.1",
+      "smartContract": "test"
+    },
+    "2test": {
+      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
+      "keyPath": "keys/2test.json",
+      "fee": "0.1",
+      "smartContract": "second"
+    },
+    "m": {
+      "url": "https://proxy.berkeley.minaexplorer.com/graphql",
+      "keyPath": "keys/m.json",
+      "fee": "0.1",
+      "smartContract": "test"
+    }
+  }
 }

@@ -13,7 +13,7 @@ import {
   fetchAccount,
   AccountUpdate,
 } from 'snarkyjs';
-import { MinadoTestApp } from './index.js';
+import { test } from './index.js';
 import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 
 describe('Minado E2E tests', () => {
