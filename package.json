@@ -22,7 +22,7 @@
     "test": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js",
     "testw": "node --experimental-vm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
-    "start": "node build/src/run.js"
+    "start": "npm run build && node build/src/run.js"
   },
   "lint-staged": {
     "**/*": [

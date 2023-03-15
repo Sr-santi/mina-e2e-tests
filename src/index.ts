@@ -1,3 +1,3 @@
-import { SudokuZkApp } from './sudoku.js';
+import { MinadoTestApp } from './minado.js';
 
-export { SudokuZkApp };
+export { MinadoTestApp };
