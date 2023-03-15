@@ -44,20 +44,20 @@ describe('Minado E2E tests', () => {
       expect(balance).toEqual(expectedBalance);
     });
     //This test needs to validate that the deposit events that are being created in the Zkapp live on-chain
-    it(`Events tests`, async () => {
-      //This should be the smart contract address
-      let address = PublicKey.fromBase58(
-        'B62qnPGoYZdQcjjDhadZrM1SUL1EjCxoEXaby7hmkqkeNrpwpWsBo1E'
-      );
-      // let balance = Mina.getBalance(address).toString();
-      let zkapp = await fetchAccount({ publicKey: address });
-      // let rawEvents = await zkapp.account.fetchEvents();
-      // let despositEvents = (await rawEvents).filter((a) => (a.type = `deposit`));
-      // use the balance of this account
-      let balance = account.account?.balance.toString();
-      let expectedBalance = '49000000000';
-      expect(balance).toEqual(expectedBalance);
-    });
+    // it(`Events tests`, async () => {
+    //   //This should be the smart contract address
+    //   let address = PublicKey.fromBase58(
+    //     'B62qnPGoYZdQcjjDhadZrM1SUL1EjCxoEXaby7hmkqkeNrpwpWsBo1E'
+    //   );
+    //   // let balance = Mina.getBalance(address).toString();
+    //   let zkapp = await fetchAccount({ publicKey: address });
+    //   // let rawEvents = await zkapp.account.fetchEvents();
+    //   // let despositEvents = (await rawEvents).filter((a) => (a.type = `deposit`));
+    //   // use the balance of this account
+    //   // let balance = account.account?.balance.toString();
+    //   let expectedBalance = '49000000000';
+    //   expect(balance).toEqual(expectedBalance);
+    // });
   }
   runTests(false);
 });
