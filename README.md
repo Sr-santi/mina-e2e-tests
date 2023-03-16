@@ -38,10 +38,12 @@ Maybe Token operations? (Approvals? Would be easy)
 Tests to implement:
 Events correctly emitted
 
-## Surface Areas
+## Surface Areas and how they are being tackled
 
 1. Recursion
 2. Call stack composability
+    It is being used when creating a deposit object, we have two smart contract an operations Smart Contract
+    and Minado Smart contract, every time we need to perform and operation we call the operation smart contract. A clear example is the createDeposit() that lives in the Minado Smart Contract, where we are using the createNullifier() method from the ops Smart Contract
 3. Actions
 4. Events
 5. Pre-conditions (account)
@@ -57,7 +59,7 @@ Events correctly emitted
 
 # Notes
 
-We are planning on using a recursive version of our Minado past implementatio. We estimate this app can cover all Surface Areas. 
+We are planning on using a recursive version of our Minado past implementation. We estimate this app can cover all Surface Areas. 
 
 
 ## Usage
