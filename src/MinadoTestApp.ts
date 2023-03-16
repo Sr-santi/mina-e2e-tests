@@ -14,14 +14,13 @@ import {
   PrivateKey,
   DeployArgs,
 } from 'snarkyjs';
-
+import { second } from './second.js';
 
 await isReady;
 
 let initialIndex: Field = new Field(0n);
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
-
 
 export class test extends SmartContract {
   @state(Field) test = State<Field>();
@@ -32,6 +31,7 @@ export class test extends SmartContract {
   @state(PublicKey) storageServerPublicKey = State<PublicKey>();
   @state(Field) storageNumber = State<Field>();
   @state(Field) storageTreeRoot = State<Field>();
+  @state(Field) nullifierHash = State<Field>();
   /**
    * by making this a `@method`, we ensure that a proof is created for the state initialization.
    * alternatively (and, more efficiently), we could have used `super.init()` inside `update()` below,
@@ -50,6 +50,15 @@ export class test extends SmartContract {
   }
   @method update() {
     this.test.set(Field(0));
+  }
+  @method manageDeposit(userPublicKey: PublicKey) {
+    //Publick Key of the Ssecond Smart contract
+    let address = PublicKey.fromBase58(
+      'B62qoYbzfZVPaVpsJtxwt2LBRCxvjDrivpxXs1jVdU46utuwoLTUguk'
+    );
+    let opsContract = new second(address);
+    let nullifierHash = opsContract.createNullifier(userPublicKey);
+    return nullifierHash;
   }
   //Everytime a commitment is added to the deposit an event will be emited
   // @method updateMerkleTree(commitment: Field) {
