@@ -12,6 +12,7 @@ import {
   PublicKey,
   MerkleTree,
   PrivateKey,
+  DeployArgs,
 } from 'snarkyjs';
 
 await isReady;
@@ -21,7 +22,10 @@ await isReady;
 // let minadoMerkleTree = new MerkleTree(3);
 
 export class second extends SmartContract {
-  @method createNullifier(publicKey: PublicKey) {
+  deploy(args: DeployArgs) {
+    super.deploy(args);
+  }
+  @method createNullifier(publicKey: PublicKey): Field {
     let keyString = publicKey.toFields();
     let secret = Field.random();
     if (secret.toString().trim().length !== 77) {

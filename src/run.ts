@@ -10,52 +10,124 @@
  * Run with node:     `$ node build/src/run.js`.
  */
 import { test } from './MinadoTestApp.js';
-import { AccountUpdate, Mina, PrivateKey, PublicKey, shutdown } from 'snarkyjs';
+import {
+  AccountUpdate,
+  Mina,
+  PrivateKey,
+  PublicKey,
+  shutdown,
+  fetchAccount,
+} from 'snarkyjs';
 import { second } from './second.js';
 // setup
 // const Local = Mina.LocalBlockchain();
 // Mina.setActiveInstance(Local);
-const dev = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
-Mina.setActiveInstance(dev);
-// const { privateKey: senderKey, publicKey: sender } = Local.testAccounts[0];
+async function init(berkley: boolean) {
+  let minadoPk: PublicKey;
+  let minadoPrivK: PrivateKey;
 
-//ZK APP setup
-const zkAppPrivateKey = PrivateKey.random();
-const zkAppAddress = zkAppPrivateKey.toPublicKey();
-
-// create an instance of the smart contract
-//TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
-const zkApp = new second(zkAppAddress);
-//Keys
-let minadoPk = PublicKey.fromBase58(
-  'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
-);
-console.log();
-let minadoPrivK = PrivateKey.fromBase58(
-  'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
-);
-console.log('Deploying and initializing Minado Test App...');
-let { verificationKey } = await test.compile();
-let defaultFee = 100_000_000;
-let deployTx = await Mina.transaction(
-  { sender: minadoPk, fee: defaultFee },
-  () => {
-    // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
-    zkApp.deploy({ zkappKey: zkAppPrivateKey });
+  let instance;
+  if (berkley) {
+    instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+    minadoPrivK = PrivateKey.fromBase58(
+      'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
+    );
+    minadoPk = PublicKey.fromBase58(
+      'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
+    );
+  } else {
+    instance = Mina.LocalBlockchain();
+    minadoPrivK = instance.testAccounts[0].privateKey;
+    minadoPk = minadoPrivK.toPublicKey();
+    Mina.setActiveInstance(instance);
   }
-);
-await deployTx.prove();
-await deployTx.sign([zkAppPrivateKey, minadoPrivK]).send();
-console.log(`DEPLOYED AT => ${zkAppAddress.toBase58()}`);
-// console.log('Deploy done');
-// try {
-//   let tx = await Mina.transaction(sender, () => {
-//     zkApp.submitSolution(Sudoku.from(sudoku), Sudoku.from(noSolution));
-//   });
-//   await tx.prove();
-//   await tx.sign([senderKey]).send();
-// } catch {
-//   console.log('There was an error submitting the solution, as expected');
-// }
-// cleanup
-await shutdown();
+  // const { privateKey: senderKey, publicKey: sender } = Local.testAccounts[0];
+
+  //ZK APPs setup
+  const zkAppTestKey = PrivateKey.random();
+  const zkAppAddress = zkAppTestKey.toPublicKey();
+
+  const zkAppSecondKey = PrivateKey.random();
+  const zkAppSecondAddress = zkAppTestKey.toPublicKey();
+
+  //Deployed addresses
+  const deployAddressOne =
+    'B62qkEonmYyM6LknMoGhBcKQcb3ubdfWF3tSYYEmfbsL2hK893gyfzq';
+  const deployAddressTwo =
+    'B62qmsFKg8cZ5DFLUf3t5rQXshQR2HNpsSR59sSQha6m7Q7YbNjPjCn';
+
+  // create an instance of the smart contract
+  //TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
+  const zkAppTest = new test(zkAppAddress);
+  const zkAppSecond = new second(zkAppSecondAddress);
+
+  console.log('Deploying and initializing Minado Test App...');
+
+  //Setup
+  let { verificationKey } = await test.compile();
+  let defaultFee = 100_000_000;
+
+  // //Deployment logic
+  let deployTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee },
+    () => {
+      // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
+      AccountUpdate.fundNewAccount(minadoPk);
+      zkAppTest.deploy({ zkappKey: zkAppTestKey });
+      // zkAppSecond.deploy({ zkappKey: zkAppSecondKey });
+    }
+  );
+  // await deployTx.sign([zkAppTestKey, minadoPrivK])
+  await deployTx.prove();
+  await deployTx.sign([zkAppTestKey, minadoPrivK]).send();
+  // await (
+  //   await deployTx.send()
+  // ).wait({
+  //   maxAttempts: 90,
+  // });
+  console.log('FIRST DEPLOY SUCCESFUL');
+  /**
+   * Second deploy
+   */
+  // let deployTx2 = await Mina.transaction(
+  //   { sender: minadoPk, fee: defaultFee },
+  //   () => {
+  //     // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
+  //     zkAppSecond.deploy({ zkappKey: zkAppSecondKey });
+  //   }
+  // );
+  // await deployTx2.sign([zkAppSecondKey, minadoPrivK])
+  // await deployTx2.prove();
+  // await deployTx2.sign([zkAppSecondKey, minadoPrivK]).send();
+  // await (
+  //   await deployTx2.send()
+  // ).wait({
+  //   maxAttempts: 90,
+  // });
+  // console.log('SECOND DEPLOY SUCCESFUL')
+  // let account = await fetchAccount({ publicKey: deployAddressOne });
+  // console.log('WHAT IS THIS')
+  // console.log(account)
+  // console.log(account.account?.zkapp?.appState)
+  // console.log(`DEPLOYED AT => ${zkAppAddress.toBase58()}`);
+
+  /**
+   * Callstack availability test
+   */
+  let testAccountPrivK = PrivateKey.random();
+  let testAccountPk = PublicKey.fromPrivateKey(testAccountPrivK);
+  let tx = await Mina.transaction({ sender: minadoPk, fee: defaultFee }, () => {
+    let hashedNullifier = zkAppTest.manageDeposit(
+      testAccountPk,
+      zkAppSecondAddress
+    );
+    console.log('This happened');
+    console.log(hashedNullifier);
+  });
+  // await tx.sign([zkAppTestKey, minadoPrivK])
+  await tx.prove();
+  await tx.sign([zkAppTestKey, minadoPrivK]).send();
+  console.log('Update happened');
+  await shutdown();
+}
+init(false);

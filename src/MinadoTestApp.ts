@@ -51,12 +51,10 @@ export class test extends SmartContract {
   @method update() {
     this.test.set(Field(0));
   }
-  @method manageDeposit(userPublicKey: PublicKey) {
+  @method manageDeposit(userPublicKey: PublicKey, address: PublicKey) {
     //Publick Key of the Ssecond Smart contract
-    let address = PublicKey.fromBase58(
-      'B62qoYbzfZVPaVpsJtxwt2LBRCxvjDrivpxXs1jVdU46utuwoLTUguk'
-    );
     let opsContract = new second(address);
+    // console.log(opsContract)
     let nullifierHash = opsContract.createNullifier(userPublicKey);
     return nullifierHash;
   }
