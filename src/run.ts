@@ -17,12 +17,17 @@ import {
   PublicKey,
   shutdown,
   fetchAccount,
+  Field,
 } from 'snarkyjs';
 import { second } from './second.js';
 // setup
 // const Local = Mina.LocalBlockchain();
 // Mina.setActiveInstance(Local);
-async function init(berkley: boolean) {
+async function init(
+  berkley: boolean,
+  zkAppSmartContractTestAddress: string | undefined,
+  zkAppSmartContractSecondAddress: string | undefined
+) {
   let minadoPk: PublicKey;
   let minadoPrivK: PrivateKey;
 
@@ -35,6 +40,7 @@ async function init(berkley: boolean) {
     minadoPk = PublicKey.fromBase58(
       'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
     );
+    Mina.setActiveInstance(instance);
   } else {
     instance = Mina.LocalBlockchain();
     minadoPrivK = instance.testAccounts[0].privateKey;
@@ -50,42 +56,37 @@ async function init(berkley: boolean) {
   const zkAppSecondKey = PrivateKey.random();
   const zkAppSecondAddress = zkAppTestKey.toPublicKey();
 
-  //Deployed addresses
-  const deployAddressOne =
-    'B62qkEonmYyM6LknMoGhBcKQcb3ubdfWF3tSYYEmfbsL2hK893gyfzq';
-  const deployAddressTwo =
-    'B62qmsFKg8cZ5DFLUf3t5rQXshQR2HNpsSR59sSQha6m7Q7YbNjPjCn';
-
   // create an instance of the smart contract
   //TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
-  const zkAppTest = new test(zkAppAddress);
-  const zkAppSecond = new second(zkAppSecondAddress);
-
-  console.log('Deploying and initializing Minado Test App...');
-
+  const zkAppTest = new test(
+    PublicKey.fromBase58(zkAppSmartContractTestAddress!)
+  );
+  // const zkAppSecond = new second(zkAppSecondAddress);
   //Setup
   let { verificationKey } = await test.compile();
   let defaultFee = 100_000_000;
 
-  // //Deployment logic
-  let deployTx = await Mina.transaction(
+  /**
+   * Events Transaction
+   */
+  let eventsTx = await Mina.transaction(
     { sender: minadoPk, fee: defaultFee },
     () => {
-      // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
-      AccountUpdate.fundNewAccount(minadoPk);
-      zkAppTest.deploy({ zkappKey: zkAppTestKey });
-      // zkAppSecond.deploy({ zkappKey: zkAppSecondKey });
+      let depositCommitment = Field(0);
+      zkAppTest.emitNullifierEvent(depositCommitment);
     }
   );
-  // await deployTx.sign([zkAppTestKey, minadoPrivK])
-  await deployTx.prove();
-  await deployTx.sign([zkAppTestKey, minadoPrivK]).send();
+  await eventsTx.prove();
+  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  console.log('Transaction done');
+  let rawevents = await zkAppTest.fetchEvents();
+  console.log('EVENTS SHOULD BE COMING HERE');
+  console.log(rawevents);
   // await (
   //   await deployTx.send()
   // ).wait({
   //   maxAttempts: 90,
   // });
-  console.log('FIRST DEPLOY SUCCESFUL');
   /**
    * Second deploy
    */
@@ -114,20 +115,24 @@ async function init(berkley: boolean) {
   /**
    * Callstack availability test
    */
-  let testAccountPrivK = PrivateKey.random();
-  let testAccountPk = PublicKey.fromPrivateKey(testAccountPrivK);
-  let tx = await Mina.transaction({ sender: minadoPk, fee: defaultFee }, () => {
-    let hashedNullifier = zkAppTest.manageDeposit(
-      testAccountPk,
-      zkAppSecondAddress
-    );
-    console.log('This happened');
-    console.log(hashedNullifier);
-  });
-  // await tx.sign([zkAppTestKey, minadoPrivK])
-  await tx.prove();
-  await tx.sign([zkAppTestKey, minadoPrivK]).send();
-  console.log('Update happened');
+  // let testAccountPrivK = PrivateKey.random();
+  // let testAccountPk = PublicKey.fromPrivateKey(testAccountPrivK);
+  // let tx = await Mina.transaction({ sender: minadoPk, fee: defaultFee }, () => {
+  //   let hashedNullifier = zkAppTest.manageDeposit(
+  //     testAccountPk,
+  //     zkAppSecondAddress
+  //   );
+  //   console.log('This happened');
+  //   console.log(hashedNullifier);
+  // });
+  // // await tx.sign([zkAppTestKey, minadoPrivK])
+  // await tx.prove();
+  // await tx.sign([zkAppTestKey, minadoPrivK]).send();
+  // console.log('Update happened');
   await shutdown();
 }
-init(false);
+init(
+  true,
+  'B62qoRZdhdCDiuxHSdPWYEsMFQLKCfooVbowc9k4jKmw8JxTVrJoL1w',
+  undefined
+);

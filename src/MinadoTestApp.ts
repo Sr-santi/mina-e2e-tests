@@ -23,6 +23,9 @@ let initialIndex: Field = new Field(0n);
 let minadoMerkleTree = new MerkleTree(3);
 
 export class test extends SmartContract {
+  events = {
+    nullifier: Field,
+  };
   @state(Field) test = State<Field>();
   // @state(Field) merkleTreeVariable = State<MerkleTree>();
   @state(Field) merkleTreeRoot = State<Field>();
@@ -57,6 +60,9 @@ export class test extends SmartContract {
     // console.log(opsContract)
     let nullifierHash = opsContract.createNullifier(userPublicKey);
     return nullifierHash;
+  }
+  @method emitNullifierEvent(nullifierHash: Field) {
+    this.emitEvent('nullifier', nullifierHash);
   }
   //Everytime a commitment is added to the deposit an event will be emited
   // @method updateMerkleTree(commitment: Field) {

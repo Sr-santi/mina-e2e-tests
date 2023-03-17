@@ -43,6 +43,8 @@ describe('Minado E2E tests', () => {
       let expectedBalance = '49000000000';
       expect(balance).toEqual(expectedBalance);
     });
+    //This function tests that events are being emmited and also that then they should be fetched
+    it('Events test');
     //This test needs to validate that the deposit events that are being created in the Zkapp live on-chain
     // it(`Events tests`, async () => {
     //   //This should be the smart contract address
