@@ -13,6 +13,7 @@ import {
   MerkleTree,
   PrivateKey,
   DeployArgs,
+  Reducer,
 } from 'snarkyjs';
 import { second } from './second.js';
 
@@ -25,8 +26,10 @@ let minadoMerkleTree = new MerkleTree(3);
 export class test extends SmartContract {
   events = {
     nullifier: Field,
+    depositIdUpdated: Field,
   };
-  @state(Field) test = State<Field>();
+  //Actions
+  reducer = Reducer({ actionType: Field });
   // @state(Field) merkleTreeVariable = State<MerkleTree>();
   @state(Field) merkleTreeRoot = State<Field>();
   @state(Field) lastIndexAdded = State<Field>();
@@ -35,6 +38,7 @@ export class test extends SmartContract {
   @state(Field) storageNumber = State<Field>();
   @state(Field) storageTreeRoot = State<Field>();
   @state(Field) nullifierHash = State<Field>();
+  @state(Field) depositId = State<Field>();
   /**
    * by making this a `@method`, we ensure that a proof is created for the state initialization.
    * alternatively (and, more efficiently), we could have used `super.init()` inside `update()` below,
@@ -51,8 +55,17 @@ export class test extends SmartContract {
   deploy(args: DeployArgs) {
     super.deploy(args);
   }
-  @method update() {
-    this.test.set(Field(0));
+  // @method update() {
+  //   this.des.set(Field(0));
+  // }
+  @method updateIdOfDeposit(id: Field) {
+    let increment = Field(1);
+    let currentDepositId = this.depositId.get();
+    this.depositId.assertEquals(currentDepositId);
+    let newDepositId = currentDepositId.add(increment);
+    this.depositId.set(newDepositId);
+    this.emitEvent('depositIdUpdated', newDepositId);
+    this.reducer.dispatch(increment);
   }
   @method manageDeposit(userPublicKey: PublicKey, address: PublicKey) {
     //Publick Key of the Ssecond Smart contract
