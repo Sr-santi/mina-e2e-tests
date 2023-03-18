@@ -33,7 +33,11 @@ async function init(
 
   let instance;
   if (berkley) {
-    instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+    // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+    instance = Mina.Network({
+      mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
+      archive: 'https://archive.berkeley.minaexplorer.com/',
+    });
     minadoPrivK = PrivateKey.fromBase58(
       'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
     );
@@ -69,19 +73,35 @@ async function init(
   /**
    * Events Transaction
    */
-  let eventsTx = await Mina.transaction(
-    { sender: minadoPk, fee: defaultFee },
-    () => {
-      let depositCommitment = Field(0);
-      zkAppTest.emitNullifierEvent(depositCommitment);
-    }
-  );
-  await eventsTx.prove();
-  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-  console.log('Transaction done');
+  // let eventsTx = await Mina.transaction(
+  //   { sender: minadoPk, fee: defaultFee },
+  //   () => {
+  //     let depositCommitment =Field(0)
+  //     zkAppTest.emitNullifierEvent(depositCommitment)
+  //   }
+  // );
+  // await eventsTx.prove();
+  // await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  // let txHash= await eventsTx.transaction.memo.toString()
+  // console.log(`Transaction done Here => ${txHash}`)
+
+  /**
+   * Fetching the events
+   */
   let rawevents = await zkAppTest.fetchEvents();
-  console.log('EVENTS SHOULD BE COMING HERE');
+  console.log('THESE ARE THE EVENTS');
   console.log(rawevents);
+  /**
+   * Standard fetch account
+   */
+
+  let accountZk = await fetchAccount({
+    publicKey: zkAppSmartContractTestAddress!,
+  });
+  //TODO: Just as a reminder fetchEvents is not working rn
+  console.log('ZKAPP STATE');
+  console.log(accountZk.account?.zkapp);
+
   // await (
   //   await deployTx.send()
   // ).wait({
