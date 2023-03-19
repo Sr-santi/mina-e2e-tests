@@ -58,7 +58,7 @@ export class test extends SmartContract {
   // @method update() {
   //   this.des.set(Field(0));
   // }
-  @method updateIdOfDeposit(id: Field) {
+  @method updateIdOfDeposit() {
     let increment = Field(1);
     let currentDepositId = this.depositId.get();
     this.depositId.assertEquals(currentDepositId);
@@ -66,6 +66,7 @@ export class test extends SmartContract {
     this.depositId.set(newDepositId);
     this.emitEvent('depositIdUpdated', newDepositId);
     this.reducer.dispatch(increment);
+    // return newDepositId;
   }
   @method manageDeposit(userPublicKey: PublicKey, address: PublicKey) {
     //Publick Key of the Ssecond Smart contract

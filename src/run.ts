@@ -69,21 +69,41 @@ async function init(
   //Setup
   let { verificationKey } = await test.compile();
   let defaultFee = 100_000_000;
+  //Geting the value of depositId befote
+  let prevDepositId = await zkAppTest.depositId.fetch();
+  /**
+   * Emiting an action to update the depositId
+   */
+  let actionTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee },
+    () => {
+      zkAppTest.updateIdOfDeposit();
+    }
+  );
+  await actionTx.prove();
+  await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
+  console.log('Id of deposit updated and transaction send');
+  let currentDepositId = await zkAppTest.depositId.fetch();
+  console.log('CURRENT DEPOSIT ID');
+  console.log(currentDepositId);
+  /**
+   * Fetching the actions
+   */
 
   /**
    * Events Transaction
    */
-  // let eventsTx = await Mina.transaction(
-  //   { sender: minadoPk, fee: defaultFee },
-  //   () => {
-  //     let depositCommitment =Field(0)
-  //     zkAppTest.emitNullifierEvent(depositCommitment)
-  //   }
-  // );
-  // await eventsTx.prove();
-  // await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  let eventsTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee },
+    () => {
+      let depositCommitment = Field(0);
+      zkAppTest.emitNullifierEvent(depositCommitment);
+    }
+  );
+  await eventsTx.prove();
+  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
   // let txHash= await eventsTx.transaction.memo.toString()
-  // console.log(`Transaction done Here => ${txHash}`)
+  console.log(`Events Transaction done `);
 
   /**
    * Fetching the events
@@ -99,8 +119,6 @@ async function init(
     publicKey: zkAppSmartContractTestAddress!,
   });
   //TODO: Just as a reminder fetchEvents is not working rn
-  console.log('ZKAPP STATE');
-  console.log(accountZk.account?.zkapp);
 
   // await (
   //   await deployTx.send()
@@ -153,6 +171,6 @@ async function init(
 }
 init(
   true,
-  'B62qoRZdhdCDiuxHSdPWYEsMFQLKCfooVbowc9k4jKmw8JxTVrJoL1w',
+  'B62qnspFth2TM38B62QQW272yaozwMrymrsjcn4C8v9RxGYQvJjF2he',
   undefined
 );
