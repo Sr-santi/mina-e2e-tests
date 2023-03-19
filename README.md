@@ -4,39 +4,18 @@
 
 ### MixerZkApp
 
-1 - Recursion:
+1 - Recursion NOT DONE
 
-2 - Call stack composability: 
-   Sending of mina tokens
-   AccountUpdate creation for paying account creation fee
-
-4 - Events:
-5 - Preconditions (account):
-6 - Preconditions (network):
+2 - Call stack composability:  HALF DONE
+3. Actions: DONE WITH SOME BUGS 
+4 - Events: DONE 
+5 - Preconditions (account):DONE  WITH BUGS
+6 - Preconditions (network): NOT DONE 
 GlobalSlot
-7 - Permissions:
-8 - Deploy SC:
+7 - Permissions: NOT DONE 
+8 - Deploy SC: DONE
+9 - TOKENS :NOT DONE
 
-Tests to implement:
- - X depositTimelocked ( + isTimed )
- - Not-permitted Transactions
- - Events correctly emitted
-
-### Lending
-
-2 - Call stack composability:
-
-3 - Actions/Reducer: 
-AddLiquidity - Rollup
-Maybe Token operations? (Approvals? Would be easy)
-
-4 - Events
-5 - Preconditions (account):
-6 - Preconditions (network):
-9 - Tokens:
-
-Tests to implement:
-Events correctly emitted
 
 ## Surface Areas and how they are being tackled
 

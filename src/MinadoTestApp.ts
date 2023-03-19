@@ -14,6 +14,7 @@ import {
   PrivateKey,
   DeployArgs,
   Reducer,
+  UInt64
 } from 'snarkyjs';
 import { second } from './second.js';
 
@@ -75,7 +76,8 @@ export class test extends SmartContract {
     let nullifierHash = opsContract.createNullifier(userPublicKey);
     return nullifierHash;
   }
-  @method emitNullifierEvent(nullifierHash: Field) {
+  @method emitNullifierEvent(nullifierHash: Field,sender:PublicKey) {
+    // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))
     this.emitEvent('nullifier', nullifierHash);
   }
   //Everytime a commitment is added to the deposit an event will be emited

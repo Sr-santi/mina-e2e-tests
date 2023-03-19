@@ -97,7 +97,7 @@ async function init(
     { sender: minadoPk, fee: defaultFee },
     () => {
       let depositCommitment = Field(0);
-      zkAppTest.emitNullifierEvent(depositCommitment);
+      zkAppTest.emitNullifierEvent(depositCommitment,minadoPk);
     }
   );
   await eventsTx.prove();
