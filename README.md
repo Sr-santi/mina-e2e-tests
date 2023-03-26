@@ -1,23 +1,26 @@
 # Mina-e2e testing
 
 ## Contracts
+## My application and what it does? 
+Our application is a shorter and simpler version of Minado, here we explain what Minado does👇🏻👇🏻
 
-### MixerZkApp
+### Minado🔒: Zk Privacy Solution on Mina Protocol
 
-1 - Recursion NOT DONE
+### What did we build? 👷🏻‍♀️🚀
 
-2 - Call stack composability:  HALF DONE
-3. Actions: DONE WITH SOME BUGS 
-4 - Events: DONE 
-5 - Preconditions (account):DONE  WITH BUGS
-6 - Preconditions (network): NOT DONE 
-GlobalSlot
-7 - Permissions: NOT DONE 
-8 - Deploy SC: DONE
-9 - TOKENS :NOT DONE
+We build a Mixer Protocol in Mina, the high-level idea is to allow private transactions for Mina, which we believe is necessary for building a fully private and secure ecosystem.
+
+### Why a Mixer? 🤔
+
+As ZkBuilders we believe that the future should not be one where you lose control over your data. Also, we build this protocol recognizing that security and privacy should not be hard for the end-user.
+We envision a world where people can control their data in a smooth and low-effort way.
+### Want to learn more? 
+Read more here (https://github.com/Sr-santi/CLI-for-Private-Solutions-using-ZK-proofs)
 
 
-## Surface Areas and how they are being tackled
+
+
+## Surface Areas and how they are being covered
 
 1. Recursion
 2. Call stack composability
@@ -36,9 +39,25 @@ GlobalSlot
 8. Deploy Smart Contract
 9. Tokens
 
+## How to deploy our zkApp(s)
+
+## Public and verification key that was used 
+Public Key: B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z
 # Notes
 
-We are planning on using a recursive version of our Minado past implementation. We estimate this app can cover all Surface Areas. 
+Please feel free to reach out with feedback to ()
+
+## TODO LIST
+1 - Recursion NOT DONE
+2 - Call stack composability:  HALF DONE
+3. Actions: DONE WITH SOME BUGS 
+4 - Events: DONE 
+5 - Preconditions (account):DONE  WITH BUGS
+6 - Preconditions (network): NOT DONE 
+GlobalSlot
+7 - Permissions: NOT DONE 
+8 - Deploy SC: DONE
+9 - TOKENS :NOT DONE
 
 
 ## Usage
