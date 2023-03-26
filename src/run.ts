@@ -18,6 +18,7 @@ import {
   shutdown,
   fetchAccount,
   Field,
+  Poseidon,
 } from 'snarkyjs';
 import { second } from './second.js';
 async function init(
@@ -64,7 +65,19 @@ async function init(
   );
   //Setup
   let defaultFee = 100_000_000;
+  /**
+   * Deposit function
+   * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
+   * @param userAccount
+   */
+  async function deposit(userAccount: string, ammount: number) {
+    let pkUserAccount = PublicKey.fromBase58(userAccount);
 
+    /**
+     *Creating nullifier and emmiting event
+     */
+    let nullifierHash = createNullifier(minadoPk);
+  }
   async function emitDepositAction() {
     //Geting the value of depositId befote
     let prevDepositId = await zkAppTest.depositId.fetch();
@@ -91,18 +104,25 @@ async function init(
   /**
    * Events Transaction
    */
-  async function emitNullifier() {
+  async function createNullifier(userPk: PublicKey) {
+    let keyString = userPk.toFields();
+    let secret = Field.random();
+    if (secret.toString().trim().length !== 77) {
+      secret = Field.random();
+    }
+    let nullifierHash = Poseidon.hash([...keyString, secret]);
+    //Transaction
     let eventsTx = await Mina.transaction(
       { sender: minadoPk, fee: defaultFee },
       () => {
-        let depositCommitment = Field(0);
-        zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
+        zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
       }
     );
     await eventsTx.prove();
     await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
     // let txHash= await eventsTx.transaction.memo.toString()
-    console.log(`Events Transaction done `);
+    console.log(`Nullifier event transaction emmited `);
+    return nullifierHash;
   }
   async function fetchEvents() {
     /**
