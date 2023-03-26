@@ -61,7 +61,6 @@ async function init(
   const zkAppSecondAddress = zkAppTestKey.toPublicKey();
 
   // create an instance of the smart contract
-  //TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
   const zkAppTest = new test(
     PublicKey.fromBase58(zkAppSmartContractTestAddress!)
   );
@@ -71,46 +70,52 @@ async function init(
   let defaultFee = 100_000_000;
   //Geting the value of depositId befote
   let prevDepositId = await zkAppTest.depositId.fetch();
-  /**
-   * Emiting an action to update the depositId
-   */
-  let actionTx = await Mina.transaction(
-    { sender: minadoPk, fee: defaultFee },
-    () => {
-      zkAppTest.updateIdOfDeposit();
-    }
-  );
-  await actionTx.prove();
-  await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
-  console.log('Id of deposit updated and transaction send');
-  let currentDepositId = await zkAppTest.depositId.fetch();
-  console.log('CURRENT DEPOSIT ID');
-  console.log(currentDepositId);
-  /**
-   * Fetching the actions
-   */
+  async function emitDepositAction() {
+    /**
+     * Emiting an action to update the depositId
+     */
+    let actionTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        zkAppTest.updateIdOfDeposit();
+      }
+    );
+    await actionTx.prove();
+    await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
+    console.log('Id of deposit updated and transaction send');
+    /**
+     * Fetching the actions
+     */
+    let currentDepositId = await zkAppTest.depositId.fetch();
+    console.log('CURRENT DEPOSIT ID');
+    console.log(currentDepositId);
+  }
 
   /**
    * Events Transaction
    */
-  let eventsTx = await Mina.transaction(
-    { sender: minadoPk, fee: defaultFee },
-    () => {
-      let depositCommitment = Field(0);
-      zkAppTest.emitNullifierEvent(depositCommitment,minadoPk);
-    }
-  );
-  await eventsTx.prove();
-  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-  // let txHash= await eventsTx.transaction.memo.toString()
-  console.log(`Events Transaction done `);
+  async function emitNullifier() {
+    let eventsTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        let depositCommitment = Field(0);
+        zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
+      }
+    );
+    await eventsTx.prove();
+    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+    // let txHash= await eventsTx.transaction.memo.toString()
+    console.log(`Events Transaction done `);
+  }
+  async function fetchEvents() {
+    /**
+     * Fetching the events
+     */
+    let rawevents = await zkAppTest.fetchEvents();
+    console.log('THESE ARE THE EVENTS');
+    console.log(rawevents);
+  }
 
-  /**
-   * Fetching the events
-   */
-  let rawevents = await zkAppTest.fetchEvents();
-  console.log('THESE ARE THE EVENTS');
-  console.log(rawevents);
   /**
    * Standard fetch account
    */
@@ -118,37 +123,6 @@ async function init(
   let accountZk = await fetchAccount({
     publicKey: zkAppSmartContractTestAddress!,
   });
-  //TODO: Just as a reminder fetchEvents is not working rn
-
-  // await (
-  //   await deployTx.send()
-  // ).wait({
-  //   maxAttempts: 90,
-  // });
-  /**
-   * Second deploy
-   */
-  // let deployTx2 = await Mina.transaction(
-  //   { sender: minadoPk, fee: defaultFee },
-  //   () => {
-  //     // AccountUpdate.fundNewAccount(accounts[0].toPublicKey(), 2);
-  //     zkAppSecond.deploy({ zkappKey: zkAppSecondKey });
-  //   }
-  // );
-  // await deployTx2.sign([zkAppSecondKey, minadoPrivK])
-  // await deployTx2.prove();
-  // await deployTx2.sign([zkAppSecondKey, minadoPrivK]).send();
-  // await (
-  //   await deployTx2.send()
-  // ).wait({
-  //   maxAttempts: 90,
-  // });
-  // console.log('SECOND DEPLOY SUCCESFUL')
-  // let account = await fetchAccount({ publicKey: deployAddressOne });
-  // console.log('WHAT IS THIS')
-  // console.log(account)
-  // console.log(account.account?.zkapp?.appState)
-  // console.log(`DEPLOYED AT => ${zkAppAddress.toBase58()}`);
 
   /**
    * Callstack availability test
