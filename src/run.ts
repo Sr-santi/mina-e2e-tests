@@ -20,9 +20,6 @@ import {
   Field,
 } from 'snarkyjs';
 import { second } from './second.js';
-// setup
-// const Local = Mina.LocalBlockchain();
-// Mina.setActiveInstance(Local);
 async function init(
   berkley: boolean,
   zkAppSmartContractTestAddress: string | undefined,
@@ -51,9 +48,10 @@ async function init(
     minadoPk = minadoPrivK.toPublicKey();
     Mina.setActiveInstance(instance);
   }
-  // const { privateKey: senderKey, publicKey: sender } = Local.testAccounts[0];
 
-  //ZK APPs setup
+  /**
+   * ZK APPs setup
+   */
   const zkAppTestKey = PrivateKey.random();
   const zkAppAddress = zkAppTestKey.toPublicKey();
 
@@ -64,13 +62,12 @@ async function init(
   const zkAppTest = new test(
     PublicKey.fromBase58(zkAppSmartContractTestAddress!)
   );
-  // const zkAppSecond = new second(zkAppSecondAddress);
   //Setup
-  let { verificationKey } = await test.compile();
   let defaultFee = 100_000_000;
-  //Geting the value of depositId befote
-  let prevDepositId = await zkAppTest.depositId.fetch();
+
   async function emitDepositAction() {
+    //Geting the value of depositId befote
+    let prevDepositId = await zkAppTest.depositId.fetch();
     /**
      * Emiting an action to update the depositId
      */
