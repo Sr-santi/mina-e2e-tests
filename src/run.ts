@@ -73,10 +73,11 @@ async function init(
   async function deposit(userAccount: string, ammount: number) {
     let pkUserAccount = PublicKey.fromBase58(userAccount);
 
-    /**
-     *Creating nullifier and emmiting event
-     */
-    let nullifierHash = createNullifier(minadoPk);
+    //  Creating nullifier and nullifieremmiting event
+    let nullifierHash = await createNullifier(minadoPk);
+    //Creatting deposit commitment
+    let secret = Field.random();
+    let commitment = await createCommitment(nullifierHash, secret);
   }
   async function emitDepositAction() {
     //Geting the value of depositId befote
@@ -124,6 +125,12 @@ async function init(
     console.log(`Nullifier event transaction emmited `);
     return nullifierHash;
   }
+  /**
+   * Function to create  the Commitment C(0) = H(S(0),N(0))
+   */
+  function createCommitment(nullifier: Field, secret: Field) {
+    return Poseidon.hash([nullifier, secret]);
+  }
   async function fetchEvents() {
     /**
      * Fetching the events
@@ -131,6 +138,25 @@ async function init(
     let rawevents = await zkAppTest.fetchEvents();
     console.log('THESE ARE THE EVENTS');
     console.log(rawevents);
+  }
+  /**
+   * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+   * @param sender
+   * @param amount
+   */
+  async function sendFundstoMixer(sender: PrivateKey, amount: any) {
+    let tx = await Mina.transaction(sender, () => {
+      let update = AccountUpdate.createSigned(sender);
+      //The userAddress is funced
+      let contractAddress = PublicKey.fromBase58(
+        zkAppSmartContractTestAddress!
+      );
+      update.send({ to: contractAddress, amount: amount });
+      console.log('Sendind Funds to Minado');
+      //Parece que la zkapp no puede recibir fondos
+    });
+    await tx.send();
+    console.log('Funds sent to minado');
   }
 
   /**
