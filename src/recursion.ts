@@ -1,4 +1,3 @@
-import { Sudoku, SudokuZkApp } from './sudoku';
 import {
   isReady,
   shutdown,
