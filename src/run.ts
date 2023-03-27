@@ -64,6 +64,7 @@ async function init(
   const zkAppTest = new test(
     PublicKey.fromBase58(zkAppSmartContractTestAddress!)
   );
+  let { verificationKey } = await test.compile();
   //Setup
   let defaultFee = 100_000_000;
   /**
@@ -100,8 +101,9 @@ async function init(
       secret: secret,
     };
     const noteString = generateNoteString(note);
+    let timeStamp = UInt64.fromFields([Field(0)]);
     //Emiting our deposit event
-    await emitDepositEvent(commitment);
+    await emitDepositEvent(commitment, timeStamp);
     //Emiting deposit action for updating IDs
     await emitDepositAction();
     console.log(`Note string ${noteString}`);
@@ -159,11 +161,11 @@ async function init(
   /**
    * Emits a nullifier event with it's commitment and timestamp
    */
-  async function emitDepositEvent(commitment: Field) {
+  async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let eventsTx = await Mina.transaction(
       { sender: minadoPk, fee: defaultFee },
       () => {
-        zkAppTest.emitDepositEvent(commitment);
+        zkAppTest.emitDepositEvent(commitment, timeStamp);
       }
     );
     await eventsTx.prove();

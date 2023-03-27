@@ -61,4 +61,4 @@ async function deploy(berkley: boolean) {
   console.log(`DEPLOY SUCCESFUL AT => ${zkAppAddress.toBase58()}`);
   await shutdown();
 }
-deploy(true);
+await deploy(true);
