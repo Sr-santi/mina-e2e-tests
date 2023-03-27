@@ -19,6 +19,7 @@ import {
   fetchAccount,
   Field,
   Poseidon,
+  UInt64,
 } from 'snarkyjs';
 import { second } from './second.js';
 async function init(
@@ -66,9 +67,19 @@ async function init(
   //Setup
   let defaultFee = 100_000_000;
   /**
+   * Types
+   */
+  type Note = {
+    currency: string;
+    amount: UInt64;
+    nullifier: Field;
+    secret: Field;
+  };
+  /**
    * Deposit function
    * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
    * @param userAccount
+   * @returns noteString That will be stored by the user 
    */
   async function deposit(userAccount: string, ammount: number) {
     let pkUserAccount = PublicKey.fromBase58(userAccount);
@@ -78,6 +89,19 @@ async function init(
     //Creatting deposit commitment
     let secret = Field.random();
     let commitment = await createCommitment(nullifierHash, secret);
+    //A note is created and send in a deposit event
+    const note = {
+      currency: 'Mina',
+      amount: new UInt64(ammount),
+      nullifier: nullifierHash,
+      secret: secret,
+    };
+    const noteString = generateNoteString(note);
+    console.log(`Note string ${noteString}`)
+    return noteString
+  }
+  function generateNoteString(note: Note): string {
+    return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
   }
   async function emitDepositAction() {
     //Geting the value of depositId befote

@@ -17,6 +17,7 @@ import {
   UInt64
 } from 'snarkyjs';
 import { second } from './second.js';
+import DepositClass from './models/DepositClass.js';
 
 await isReady;
 
@@ -28,6 +29,7 @@ export class test extends SmartContract {
   events = {
     nullifier: Field,
     depositIdUpdated: Field,
+    deposti:DepositClass
   };
   //Actions
   reducer = Reducer({ actionType: Field });
@@ -79,6 +81,13 @@ export class test extends SmartContract {
   @method emitNullifierEvent(nullifierHash: Field,sender:PublicKey) {
     // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))
     this.emitEvent('nullifier', nullifierHash);
+  }
+  @method emitDepositEvent (commitment:Field){
+    let deposit:DepositClass = {
+      commitment: commitment,
+      leafIndex: lastIndex,
+      timeStamp: new Field(2),
+    };
   }
   //Everytime a commitment is added to the deposit an event will be emited
   // @method updateMerkleTree(commitment: Field) {
