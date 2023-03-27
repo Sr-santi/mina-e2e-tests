@@ -79,7 +79,7 @@ async function init(
    * Deposit function
    * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
    * @param userAccount
-   * @returns noteString That will be stored by the user 
+   * @returns noteString That will be stored by the user
    */
   async function deposit(userAccount: string, ammount: number) {
     let pkUserAccount = PublicKey.fromBase58(userAccount);
@@ -97,8 +97,12 @@ async function init(
       secret: secret,
     };
     const noteString = generateNoteString(note);
-    console.log(`Note string ${noteString}`)
-    return noteString
+    //Emiting our deposit event
+    await emitDepositEvent(commitment);
+    //Emiting deposit action for updating IDs
+    await emitDepositAction();
+    console.log(`Note string ${noteString}`);
+    return noteString;
   }
   function generateNoteString(note: Note): string {
     return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
@@ -127,7 +131,7 @@ async function init(
   }
 
   /**
-   * Events Transaction
+   * Create nullifier and emmit an event
    */
   async function createNullifier(userPk: PublicKey) {
     let keyString = userPk.toFields();
@@ -148,6 +152,21 @@ async function init(
     // let txHash= await eventsTx.transaction.memo.toString()
     console.log(`Nullifier event transaction emmited `);
     return nullifierHash;
+  }
+  /**
+   * Emits a nullifier event with it's commitment and timestamp
+   */
+  async function emitDepositEvent(commitment: Field) {
+    let eventsTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        zkAppTest.emitDepositEvent(commitment);
+      }
+    );
+    await eventsTx.prove();
+    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+    // let txHash= await eventsTx.transaction.memo.toString()
+    console.log(`Deposit event emmited `);
   }
   /**
    * Function to create  the Commitment C(0) = H(S(0),N(0))
