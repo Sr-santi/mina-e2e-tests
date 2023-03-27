@@ -81,14 +81,17 @@ async function init(
    * @param userAccount
    * @returns noteString That will be stored by the user
    */
-  async function deposit(userAccount: string, ammount: number) {
-    let pkUserAccount = PublicKey.fromBase58(userAccount);
-
+  async function deposit(
+    userAccount: PrivateKey,
+    ammount: number,
+    sender: PublicKey
+  ) {
     //  Creating nullifier and nullifieremmiting event
     let nullifierHash = await createNullifier(minadoPk);
     //Creatting deposit commitment
     let secret = Field.random();
     let commitment = await createCommitment(nullifierHash, secret);
+    await sendFundstoMixer(userAccount, ammount, sender);
     //A note is created and send in a deposit event
     const note = {
       currency: 'Mina',
@@ -172,6 +175,7 @@ async function init(
    * Function to create  the Commitment C(0) = H(S(0),N(0))
    */
   function createCommitment(nullifier: Field, secret: Field) {
+    console.log('Commitment created');
     return Poseidon.hash([nullifier, secret]);
   }
   async function fetchEvents() {
@@ -187,7 +191,11 @@ async function init(
    * @param sender
    * @param amount
    */
-  async function sendFundstoMixer(sender: PrivateKey, amount: any) {
+  async function sendFundstoMixer(
+    senderPrivKey: PrivateKey,
+    amount: any,
+    sender: PublicKey
+  ) {
     let tx = await Mina.transaction(sender, () => {
       let update = AccountUpdate.createSigned(sender);
       //The userAddress is funced
@@ -198,7 +206,8 @@ async function init(
       console.log('Sendind Funds to Minado');
       //Parece que la zkapp no puede recibir fondos
     });
-    await tx.send();
+    await tx.prove();
+    await tx.sign([zkAppTestKey, senderPrivKey]).send();
     console.log('Funds sent to minado');
   }
 
@@ -227,6 +236,11 @@ async function init(
   // await tx.prove();
   // await tx.sign([zkAppTestKey, minadoPrivK]).send();
   // console.log('Update happened');
+
+  /**
+   * Change this to change deposit
+   */
+  await deposit(minadoPrivK, 1, minadoPk);
   await shutdown();
 }
 init(
