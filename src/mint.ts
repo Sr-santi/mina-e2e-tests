@@ -8,9 +8,11 @@ import {
   UInt64,
   PublicKey,
   Signature,
+  isReady,
 } from 'snarkyjs';
 
-const tokenSymbol = 'MINADOTKN';
+const tokenSymbol = 'MINTKN';
+await isReady;
 
 export class TokenContract extends SmartContract {
   SUPPLY = UInt64.from(10n ** 6n);
