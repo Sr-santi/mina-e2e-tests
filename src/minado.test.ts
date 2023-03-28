@@ -13,6 +13,7 @@ import {
   fetchAccount,
   AccountUpdate,
   PrivateKey,
+  fetchEvents,
 } from 'snarkyjs';
 import { test } from './index.js';
 import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
@@ -81,6 +82,15 @@ describe('Minado E2E tests', () => {
           zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
         }
       );
+    });
+    //This function tests that events are being emmited and also that then they should be fetched
+    it('Test that events are coming', async () => {
+      /**
+       * Fetching the events
+       */
+      let rawevents = await zkAppTest.fetchEvents();
+      console.log('THESE ARE THE EVENTS');
+      console.log(rawevents);
     });
 
     //This function tests that we are using a function for another smart contract correctly and without problems

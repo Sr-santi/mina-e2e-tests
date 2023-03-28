@@ -20,6 +20,7 @@ import {
   Field,
   Poseidon,
   UInt64,
+  Circuit,
 } from 'snarkyjs';
 import { second } from './second.js';
 async function init(
@@ -110,6 +111,7 @@ async function init(
     //Emiting deposit action for updating IDs
     await emitDepositAction();
     console.log(`Note string ${noteString}`);
+    await fetchEvents();
     return noteString;
   }
   function generateNoteString(note: Note): string {
@@ -147,17 +149,22 @@ async function init(
     if (secret.toString().trim().length !== 77) {
       secret = Field.random();
     }
+    let account = PublicKey;
     let nullifierHash = Poseidon.hash([...keyString, secret]);
     //Transaction
-    let eventsTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee },
-      () => {
-        zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
-      }
-    );
-    await eventsTx.prove();
-    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-    // let txHash= await eventsTx.transaction.memo.toString()
+    try {
+      let eventsTx = await Mina.transaction(
+        { sender: minadoPk, fee: defaultFee },
+        () => {
+          zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
+        }
+      );
+      await eventsTx.prove();
+      await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+      // let txHash= await eventsTx.transaction.memo.toString()
+    } catch (err) {
+      console.log(err);
+    }
     console.log(`Nullifier event transaction emmited `);
     return nullifierHash;
   }
