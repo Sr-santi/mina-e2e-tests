@@ -149,22 +149,18 @@ async function init(
     if (secret.toString().trim().length !== 77) {
       secret = Field.random();
     }
-    let account = PublicKey;
+    let account =PublicKey
     let nullifierHash = Poseidon.hash([...keyString, secret]);
     //Transaction
-    try {
-      let eventsTx = await Mina.transaction(
-        { sender: minadoPk, fee: defaultFee },
-        () => {
-          zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
-        }
-      );
-      await eventsTx.prove();
-      await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-      // let txHash= await eventsTx.transaction.memo.toString()
-    } catch (err) {
-      console.log(err);
-    }
+    let eventsTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
+      }
+    );
+    await eventsTx.prove();
+    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+    // let txHash= await eventsTx.transaction.memo.toString()
     console.log(`Nullifier event transaction emmited `);
     return nullifierHash;
   }

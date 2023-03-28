@@ -52,8 +52,8 @@ Please feel free to reach out with feedback to ()
 2 - Call stack composability:  HALF DONE
 3. Actions: DONE WITH SOME BUGS 
 4 - Events: DONE 
-5 - Preconditions (account):DONE  WITH BUGS
-6 - Preconditions (network): NOT DONE 
+5 - Preconditions (account):Simple bug needs fix
+6 - Preconditions (network):Simple bug needs fix
 GlobalSlot
 7 - Permissions: NOT DONE 
 8 - Deploy SC: DONE

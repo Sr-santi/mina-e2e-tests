@@ -79,16 +79,18 @@ export class test extends SmartContract {
     return nullifierHash;
   }
   @method emitNullifierEvent(nullifierHash: Field, sender: PublicKey) {
+    //TODO: FIX
     // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))
     // const account =  this.account.isNew.get()
-    try {
-      const time = this.network.timestamp.get();
-      console.log('account', time);
-      this.emitEvent('nullifier', nullifierHash);
-      // account.assertEquals(false)
-    } catch (err) {
-      console.log(err);
-    }
+    // try {
+    //   const time = this.network.timestamp.get();
+    //   console.log('account', time);
+    //   this.emitEvent('nullifier', nullifierHash);
+    //   // account.assertEquals(false)
+    // } catch (err) {
+    //   console.log(err);
+    // }
+    this.emitEvent('nullifier', nullifierHash);
   }
   @method emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let deposit = {
