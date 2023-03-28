@@ -94,7 +94,13 @@ export class test extends SmartContract {
     return nullifierHash;
   }
   @method emitNullifierEvent(nullifierHash: Field, sender: PublicKey) {
-    //TODO: FIX
+    //TODO: THIS FAILS
+    // this.account.provedState.assertEquals(this.account.provedState.get());
+    // this.account.isNew.assertEquals(this.account.isNew.get())
+    // this.account.isNew.get().assertFalse
+    //TODO:THIS PASSES
+    // this.account.provedState.assertEquals(this.account.provedState.get());
+    // this.account.provedState.get().assertFalse();
     // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))
     // const account =  this.account.isNew.get()
     // try {
