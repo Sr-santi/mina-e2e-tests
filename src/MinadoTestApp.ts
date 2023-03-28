@@ -15,6 +15,7 @@ import {
   DeployArgs,
   Reducer,
   UInt64,
+  Permissions,
 } from 'snarkyjs';
 import { second } from './second.js';
 import DepositClass from './models/DepositClass.js';
@@ -49,6 +50,9 @@ export class test extends SmartContract {
    * however, it's good to have an example which tests the CLI's ability to handle init() decorated with `@method`.
    */
   @method init() {
+    //TODO:When we add this all should failed as the proof is not authorized
+    this.account.provedState.assertEquals(this.account.provedState.get());
+    this.account.provedState.get().assertFalse();
     super.init();
     this.lastIndexAdded.set(initialIndex);
     let merkleRoot = minadoMerkleTree.getRoot();
@@ -57,6 +61,17 @@ export class test extends SmartContract {
 
   deploy(args: DeployArgs) {
     super.deploy(args);
+    this.account.permissions.set({
+      ...Permissions.default(),
+      setDelegate: Permissions.proof(),
+      setPermissions: Permissions.proof(),
+      setVerificationKey: Permissions.proof(),
+      setZkappUri: Permissions.proof(),
+      setTokenSymbol: Permissions.proof(),
+      incrementNonce: Permissions.proof(),
+      setVotingFor: Permissions.proof(),
+      setTiming: Permissions.proof(),
+    });
   }
   // @method update() {
   //   this.des.set(Field(0));
