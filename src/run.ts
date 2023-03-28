@@ -67,6 +67,8 @@ async function init(
   let { verificationKey } = await test.compile();
   //Setup
   let defaultFee = 100_000_000;
+  let defaultFee2 = 200_000_000;
+  let defaultFee3 = 300_000_000;
   /**
    * Types
    */
@@ -100,6 +102,7 @@ async function init(
       nullifier: nullifierHash,
       secret: secret,
     };
+    //Generating notestring
     const noteString = generateNoteString(note);
     let timeStamp = UInt64.fromFields([Field(0)]);
     //Emiting our deposit event
@@ -163,7 +166,7 @@ async function init(
    */
   async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let eventsTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee },
+      { sender: minadoPk, fee: defaultFee3 },
       () => {
         zkAppTest.emitDepositEvent(commitment, timeStamp);
       }
@@ -198,16 +201,19 @@ async function init(
     amount: any,
     sender: PublicKey
   ) {
-    let tx = await Mina.transaction(sender, () => {
-      let update = AccountUpdate.createSigned(sender);
-      //The userAddress is funced
-      let contractAddress = PublicKey.fromBase58(
-        zkAppSmartContractTestAddress!
-      );
-      update.send({ to: contractAddress, amount: amount });
-      console.log('Sendind Funds to Minado');
-      //Parece que la zkapp no puede recibir fondos
-    });
+    let tx = await Mina.transaction(
+      { sender: sender, fee: defaultFee2 },
+      () => {
+        let update = AccountUpdate.createSigned(sender);
+        //The userAddress is funced
+        let contractAddress = PublicKey.fromBase58(
+          zkAppSmartContractTestAddress!
+        );
+        update.send({ to: contractAddress, amount: amount });
+        console.log('Sendind Funds to Minado');
+        //Parece que la zkapp no puede recibir fondos
+      }
+    );
     await tx.prove();
     await tx.sign([zkAppTestKey, senderPrivKey]).send();
     console.log('Funds sent to minado');
@@ -247,6 +253,6 @@ async function init(
 }
 init(
   true,
-  'B62qnspFth2TM38B62QQW272yaozwMrymrsjcn4C8v9RxGYQvJjF2he',
+  'B62qqJiz2rTT9TUTVVmh5jNes6AZ2fnjnAtXQ85zmNxjxM7J71Vy6MX',
   undefined
 );
