@@ -8,6 +8,7 @@ import {
   fetchAccount,
 } from 'snarkyjs';
 import { second } from './second.js';
+import { TokenContract } from './mint.js';
 // setup
 // const Local = Mina.LocalBlockchain();
 // Mina.setActiveInstance(Local);
@@ -39,7 +40,7 @@ async function deploy(berkley: boolean) {
 
   // create an instance of the smart contract
   //TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
-  const zkAppTest = new test(zkAppAddress);
+  const zkAppTest = new TokenContract(zkAppAddress);
   //   const zkAppSecond = new second(zkAppSecondAddress);
 
   console.log('Deploying and initializing Minado Test App...');
@@ -61,4 +62,4 @@ async function deploy(berkley: boolean) {
   console.log(`DEPLOY SUCCESFUL AT => ${zkAppAddress.toBase58()}`);
   await shutdown();
 }
-deploy(true);
+await deploy(true);
