@@ -57,7 +57,7 @@ Please feel free to reach out with feedback to ()
 GlobalSlot
 7 - Permissions: DONE
 8 - Deploy SC: DONE
-9 - TOKENS :NOT DONE
+9 - TOKENS : DONE
 
 
 ## Usage

@@ -16,10 +16,11 @@ import {
   Reducer,
   UInt64,
   Permissions,
+  Signature
 } from 'snarkyjs';
 import { second } from './second.js';
 import DepositClass from './models/DepositClass.js';
-
+import {TokenContract} from './mint.js'
 await isReady;
 
 let initialIndex: Field = new Field(0n);
@@ -92,6 +93,16 @@ export class test extends SmartContract {
     // console.log(opsContract)
     let nullifierHash = opsContract.createNullifier(userPublicKey);
     return nullifierHash;
+  }
+  @method mintMinadoToken(tokenAddress:PublicKey,recieverAddress:PublicKey,signerPk:PrivateKey){
+    const mintContract = new TokenContract(tokenAddress)
+    const mintAmount = UInt64.from(10); 
+  const mintSignature = Signature.create(
+    signerPk,
+    mintAmount.toFields().concat(tokenAddress.toFields())
+  );
+    mintContract.mint(recieverAddress,mintAmount,mintSignature)
+
   }
   @method emitNullifierEvent(nullifierHash: Field, sender: PublicKey) {
     //TODO: THIS FAILS

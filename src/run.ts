@@ -70,6 +70,7 @@ async function init(
   let defaultFee = 100_000_000;
   let defaultFee2 = 200_000_000;
   let defaultFee3 = 300_000_000;
+  let defaultFee4 = 400_000_000;
   /**
    * Types
    */
@@ -111,6 +112,8 @@ async function init(
     //Emiting deposit action for updating IDs
     await emitDepositAction();
     console.log(`Note string ${noteString}`);
+    //Minting a token as a reward to the user 
+    await mintToken(sender,zkAppTestKey)
     await fetchEvents();
     return noteString;
   }
@@ -221,7 +224,17 @@ async function init(
     await tx.sign([zkAppTestKey, senderPrivKey]).send();
     console.log('Funds sent to minado');
   }
-
+  async function mintToken(recieverAddress:PublicKey,signerPk:PrivateKey){
+    let secondPublicKey =PublicKey.fromBase58(zkAppSmartContractSecondAddress!)
+    const mint_txn = await Mina.transaction({ sender: minadoPk, fee: defaultFee4 }, () => {
+      zkAppTest.mintMinadoToken(secondPublicKey, recieverAddress, signerPk);
+    });
+  
+    await mint_txn.prove();
+    mint_txn.sign([zkAppTestKey]);
+    await mint_txn.send();
+    console.log(`Token mintented to ${recieverAddress}`)
+  }
   /**
    * Standard fetch account
    */
