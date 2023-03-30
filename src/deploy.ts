@@ -46,8 +46,9 @@ async function deploy(berkley: boolean) {
   console.log('Deploying and initializing Minado Test App...');
 
   //Setup
+  //TODO:Also change when deploying
   let { verificationKey } = await TokenContract.compile();
-  let defaultFee = 100_000_000;
+  let defaultFee = 300_000_000;
 
   // //Deployment logic
   let deployTx = await Mina.transaction(

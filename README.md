@@ -49,7 +49,7 @@ Please feel free to reach out with feedback to ()
 
 ## TODO LIST
 1 - Recursion NOT DONE
-2 - Call stack composability:  HALF DONE
+2 - Call stack composability:  DONE
 3. Actions: DONE WITH SOME BUGS 
 4 - Events: DONE 
 5 - Preconditions (account):Simple bug needs fix
@@ -58,6 +58,7 @@ GlobalSlot
 7 - Permissions: DONE
 8 - Deploy SC: DONE
 9 - TOKENS : DONE
+TESTS: In progress
 
 
 ## Usage

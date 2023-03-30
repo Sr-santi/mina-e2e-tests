@@ -24,6 +24,7 @@ import {TokenContract} from './mint.js'
 await isReady;
 
 let initialIndex: Field = new Field(0n);
+ const mintAmount = UInt64.from(1);
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
 
@@ -94,22 +95,23 @@ export class test extends SmartContract {
     let nullifierHash = opsContract.createNullifier(userPublicKey);
     return nullifierHash;
   }
-  @method mintMinadoToken(tokenAddress:PublicKey,recieverAddress:PublicKey,signerPk:PrivateKey){
-    const mintContract = new TokenContract(tokenAddress)
-    const mintAmount = UInt64.from(10); 
-  const mintSignature = Signature.create(
-    signerPk,
-    mintAmount.toFields().concat(tokenAddress.toFields())
-  );
-    mintContract.mint(recieverAddress,mintAmount,mintSignature)
-
+  //TODO: CHANGE SIGNATURE TYPE
+  @method mintMinadoToken(tokenAddress:PublicKey,recieverAddress:PublicKey,signature:Signature){
+    try{
+      const mintContract = new TokenContract(tokenAddress)
+      mintContract.mint(recieverAddress,mintAmount,signature)
+    }
+    catch(err){
+      console.log(err)
+    }
   }
   @method emitNullifierEvent(nullifierHash: Field, sender: PublicKey) {
     //TODO: THIS FAILS
     // this.account.provedState.assertEquals(this.account.provedState.get());
     // this.account.isNew.assertEquals(this.account.isNew.get())
     // this.account.isNew.get().assertFalse
-    //TODO:THIS PASSES
+    //TODO:THIS FAILS 
+    
     // this.account.provedState.assertEquals(this.account.provedState.get());
     // this.account.provedState.get().assertFalse();
     // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))

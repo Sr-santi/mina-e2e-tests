@@ -20,255 +20,245 @@ import {
   Field,
   Poseidon,
   UInt64,
+  Signature,
   Circuit,
 } from 'snarkyjs';
 import { second } from './second.js';
-async function init(
-  berkley: boolean,
-  zkAppSmartContractTestAddress: string | undefined,
-  zkAppSmartContractSecondAddress: string | undefined
-) {
-  let minadoPk: PublicKey;
-  let minadoPrivK: PrivateKey;
+import { TokenContract } from './mint.js';
+// export {init}
+const berkley = true;
+const zkAppSmartContractTestAddress =
+  'B62qr2JMr3GDmGu9vHxaAC1WWKBwcvSeEBJ5Q3dKEycFSMSs1JKQqZC';
+const zkAppSmartContractSecondAddress =
+  'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
 
-  let instance;
-  if (berkley) {
-    // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
-    instance = Mina.Network({
-      mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
-      archive: 'https://archive.berkeley.minaexplorer.com/',
-    });
-    minadoPrivK = PrivateKey.fromBase58(
-      'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
-    );
-    minadoPk = PublicKey.fromBase58(
-      'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
-    );
-    Mina.setActiveInstance(instance);
-  } else {
-    instance = Mina.LocalBlockchain();
-    minadoPrivK = instance.testAccounts[0].privateKey;
-    minadoPk = minadoPrivK.toPublicKey();
-    Mina.setActiveInstance(instance);
-  }
+let minadoPk: PublicKey;
+let minadoPrivK: PrivateKey;
 
-  /**
-   * ZK APPs setup
-   */
-  const zkAppTestKey = PrivateKey.random();
-  const zkAppAddress = zkAppTestKey.toPublicKey();
-
-  const zkAppSecondKey = PrivateKey.random();
-  const zkAppSecondAddress = zkAppTestKey.toPublicKey();
-
-  // create an instance of the smart contract
-  const zkAppTest = new test(
-    PublicKey.fromBase58(zkAppSmartContractTestAddress!)
-  );
-  let { verificationKey } = await test.compile();
-  //Setup
-  let defaultFee = 100_000_000;
-  let defaultFee2 = 200_000_000;
-  let defaultFee3 = 300_000_000;
-  let defaultFee4 = 400_000_000;
-  /**
-   * Types
-   */
-  type Note = {
-    currency: string;
-    amount: UInt64;
-    nullifier: Field;
-    secret: Field;
-  };
-  /**
-   * Deposit function
-   * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
-   * @param userAccount
-   * @returns noteString That will be stored by the user
-   */
-  async function deposit(
-    userAccount: PrivateKey,
-    ammount: number,
-    sender: PublicKey
-  ) {
-    //  Creating nullifier and nullifieremmiting event
-    let nullifierHash = await createNullifier(minadoPk);
-    //Creatting deposit commitment
-    let secret = Field.random();
-    let commitment = await createCommitment(nullifierHash, secret);
-    await sendFundstoMixer(userAccount, ammount, sender);
-    //A note is created and send in a deposit event
-    const note = {
-      currency: 'Mina',
-      amount: new UInt64(ammount),
-      nullifier: nullifierHash,
-      secret: secret,
-    };
-    //Generating notestring
-    const noteString = generateNoteString(note);
-    let timeStamp = UInt64.fromFields([Field(0)]);
-    //Emiting our deposit event
-    await emitDepositEvent(commitment, timeStamp);
-    //Emiting deposit action for updating IDs
-    await emitDepositAction();
-    console.log(`Note string ${noteString}`);
-    //Minting a token as a reward to the user 
-    await mintToken(sender,zkAppTestKey)
-    await fetchEvents();
-    return noteString;
-  }
-  function generateNoteString(note: Note): string {
-    return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
-  }
-  async function emitDepositAction() {
-    //Geting the value of depositId befote
-    let prevDepositId = await zkAppTest.depositId.fetch();
-    /**
-     * Emiting an action to update the depositId
-     */
-    let actionTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee },
-      () => {
-        zkAppTest.updateIdOfDeposit();
-      }
-    );
-    await actionTx.prove();
-    await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
-    console.log('Id of deposit updated and transaction send');
-    /**
-     * Fetching the actions
-     */
-    let currentDepositId = await zkAppTest.depositId.fetch();
-    console.log('CURRENT DEPOSIT ID');
-    console.log(currentDepositId);
-  }
-
-  /**
-   * Create nullifier and emmit an event
-   */
-  async function createNullifier(userPk: PublicKey) {
-    let keyString = userPk.toFields();
-    let secret = Field.random();
-    if (secret.toString().trim().length !== 77) {
-      secret = Field.random();
-    }
-    let account =PublicKey
-    let nullifierHash = Poseidon.hash([...keyString, secret]);
-    //Transaction
-    let eventsTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee },
-      () => {
-        zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
-      }
-    );
-    await eventsTx.prove();
-    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-    // let txHash= await eventsTx.transaction.memo.toString()
-    console.log(`Nullifier event transaction emmited `);
-    return nullifierHash;
-  }
-  /**
-   * Emits a nullifier event with it's commitment and timestamp
-   */
-  async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
-    let eventsTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee3 },
-      () => {
-        zkAppTest.emitDepositEvent(commitment, timeStamp);
-      }
-    );
-    await eventsTx.prove();
-    await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-    // let txHash= await eventsTx.transaction.memo.toString()
-    console.log(`Deposit event emmited `);
-  }
-  /**
-   * Function to create  the Commitment C(0) = H(S(0),N(0))
-   */
-  function createCommitment(nullifier: Field, secret: Field) {
-    console.log('Commitment created');
-    return Poseidon.hash([nullifier, secret]);
-  }
-  async function fetchEvents() {
-    /**
-     * Fetching the events
-     */
-    let rawevents = await zkAppTest.fetchEvents();
-    console.log('THESE ARE THE EVENTS');
-    console.log(rawevents);
-  }
-  /**
-   * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
-   * @param sender
-   * @param amount
-   */
-  async function sendFundstoMixer(
-    senderPrivKey: PrivateKey,
-    amount: any,
-    sender: PublicKey
-  ) {
-    let tx = await Mina.transaction(
-      { sender: sender, fee: defaultFee2 },
-      () => {
-        let update = AccountUpdate.createSigned(sender);
-        //The userAddress is funced
-        let contractAddress = PublicKey.fromBase58(
-          zkAppSmartContractTestAddress!
-        );
-        update.send({ to: contractAddress, amount: amount });
-        console.log('Sendind Funds to Minado');
-        //Parece que la zkapp no puede recibir fondos
-      }
-    );
-    await tx.prove();
-    await tx.sign([zkAppTestKey, senderPrivKey]).send();
-    console.log('Funds sent to minado');
-  }
-  async function mintToken(recieverAddress:PublicKey,signerPk:PrivateKey){
-    let secondPublicKey =PublicKey.fromBase58(zkAppSmartContractSecondAddress!)
-    const mint_txn = await Mina.transaction({ sender: minadoPk, fee: defaultFee4 }, () => {
-      zkAppTest.mintMinadoToken(secondPublicKey, recieverAddress, signerPk);
-    });
-  
-    await mint_txn.prove();
-    mint_txn.sign([zkAppTestKey]);
-    await mint_txn.send();
-    console.log(`Token mintented to ${recieverAddress}`)
-  }
-  /**
-   * Standard fetch account
-   */
-
-  let accountZk = await fetchAccount({
-    publicKey: zkAppSmartContractTestAddress!,
+let instance;
+if (berkley) {
+  // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+  instance = Mina.Network({
+    mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
+    archive: 'https://archive.berkeley.minaexplorer.com/',
   });
-
-  /**
-   * Callstack availability test
-   */
-  // let testAccountPrivK = PrivateKey.random();
-  // let testAccountPk = PublicKey.fromPrivateKey(testAccountPrivK);
-  // let tx = await Mina.transaction({ sender: minadoPk, fee: defaultFee }, () => {
-  //   let hashedNullifier = zkAppTest.manageDeposit(
-  //     testAccountPk,
-  //     zkAppSecondAddress
-  //   );
-  //   console.log('This happened');
-  //   console.log(hashedNullifier);
-  // });
-  // // await tx.sign([zkAppTestKey, minadoPrivK])
-  // await tx.prove();
-  // await tx.sign([zkAppTestKey, minadoPrivK]).send();
-  // console.log('Update happened');
-
-  /**
-   * Change this to change deposit
-   */
-  await deposit(minadoPrivK, 1, minadoPk);
-  await shutdown();
+  minadoPrivK = PrivateKey.fromBase58(
+    'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
+  );
+  minadoPk = PublicKey.fromBase58(
+    'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
+  );
+  Mina.setActiveInstance(instance);
+  await fetchAccount({ publicKey: minadoPk });
+} else {
+  instance = Mina.LocalBlockchain();
+  minadoPrivK = instance.testAccounts[0].privateKey;
+  minadoPk = minadoPrivK.toPublicKey();
+  Mina.setActiveInstance(instance);
 }
-init(
-  true,
-  'B62qqJiz2rTT9TUTVVmh5jNes6AZ2fnjnAtXQ85zmNxjxM7J71Vy6MX',
-  undefined
+
+/**
+ * ZK APPs setup
+ */
+const zkAppTestKey = PrivateKey.random();
+const zkAppAddress = zkAppTestKey.toPublicKey();
+
+const zkAppSecondKey = PrivateKey.random();
+const zkAppSecondAddress = zkAppTestKey.toPublicKey();
+
+// create an instance of the smart contract
+const zkAppTest = new test(
+  PublicKey.fromBase58(zkAppSmartContractTestAddress!)
 );
+const zkAppTwo = new TokenContract(
+  PublicKey.fromBase58(zkAppSmartContractSecondAddress!)
+);
+let { verificationKey } = await test.compile();
+await TokenContract.compile();
+//Setup
+let defaultFee = 100_000_000;
+let defaultFee2 = 200_000_000;
+let defaultFee3 = 300_000_000;
+let defaultFee4 = 400_000_000;
+/**
+ * Types
+ */
+type Note = {
+  currency: string;
+  amount: UInt64;
+  nullifier: Field;
+  secret: Field;
+};
+function generateNoteString(note: Note): string {
+  return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
+}
+async function emitDepositAction() {
+  //Geting the value of depositId befote
+  let prevDepositId = await zkAppTest.depositId.fetch();
+  /**
+   * Emiting an action to update the depositId
+   */
+  let actionTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee },
+    () => {
+      zkAppTest.updateIdOfDeposit();
+    }
+  );
+  await actionTx.prove();
+  await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
+  console.log('Id of deposit updated and transaction send');
+  /**
+   * Fetching the actions
+   */
+  let currentDepositId = await zkAppTest.depositId.fetch();
+  console.log('CURRENT DEPOSIT ID');
+  console.log(currentDepositId);
+}
+
+/**
+ * Create nullifier and emmit an event
+ */
+async function createNullifier(userPk: PublicKey) {
+  await fetchAccount({ publicKey: minadoPk });
+  let keyString = userPk.toFields();
+  let secret = Field.random();
+  if (secret.toString().trim().length !== 77) {
+    secret = Field.random();
+  }
+  let nullifierHash = Poseidon.hash([...keyString, secret]);
+  //Transaction
+  let eventsTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee },
+    () => {
+      zkAppTest.emitNullifierEvent(nullifierHash, minadoPk);
+    }
+  );
+  await eventsTx.prove();
+  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  // let txHash= await eventsTx.transaction.memo.toString()
+  console.log(`Nullifier event transaction emmited `);
+  return nullifierHash;
+}
+/**
+ * Emits a nullifier event with it's commitment and timestamp
+ */
+async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
+  let eventsTx = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee3 },
+    () => {
+      zkAppTest.emitDepositEvent(commitment, timeStamp);
+    }
+  );
+  await eventsTx.prove();
+  await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  // let txHash= await eventsTx.transaction.memo.toString()
+  console.log(`Deposit event emmited `);
+}
+/**
+ * Function to create  the Commitment C(0) = H(S(0),N(0))
+ */
+function createCommitment(nullifier: Field, secret: Field) {
+  console.log('Commitment created');
+  return Poseidon.hash([nullifier, secret]);
+}
+async function fetchEvents() {
+  /**
+   * Fetching the events
+   */
+  let rawevents = await zkAppTest.fetchEvents();
+  console.log('THESE ARE THE EVENTS');
+  console.log(rawevents);
+}
+/**
+ * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+ * @param sender
+ * @param amount
+ */
+async function sendFundstoMixer(
+  senderPrivKey: PrivateKey,
+  amount: any,
+  sender: PublicKey
+) {
+  let tx = await Mina.transaction({ sender: sender, fee: defaultFee2 }, () => {
+    let update = AccountUpdate.createSigned(sender);
+    //The userAddress is funced
+    let contractAddress = PublicKey.fromBase58(zkAppSmartContractTestAddress!);
+    update.send({ to: contractAddress, amount: amount });
+    console.log('Sendind Funds to Minado');
+    //Parece que la zkapp no puede recibir fondos
+  });
+  await tx.prove();
+  await tx.sign([zkAppTestKey, senderPrivKey]).send();
+  console.log('Funds sent to minado');
+}
+/**
+ * Mint token Function
+ */
+let secondPublicKey = PublicKey.fromBase58(zkAppSmartContractSecondAddress!);
+await fetchAccount({publicKey:secondPublicKey})
+export async function mintToken(recieverAddress: PublicKey, signerPk: Signature) {
+  const mint_txn = await Mina.transaction(
+    { sender: minadoPk, fee: defaultFee4 },
+    () => {
+      zkAppTest.mintMinadoToken(secondPublicKey, recieverAddress, signerPk);
+    }
+  );
+
+  await mint_txn.prove();
+  mint_txn.sign([minadoPrivK]);
+  await mint_txn.send();
+  console.log(`Token mintented to ${recieverAddress}`);
+}
+/**
+ * Standard fetch account
+ */
+
+let accountZk = await fetchAccount({
+  publicKey: zkAppSmartContractTestAddress!,
+});
+/**
+ * Deposit function
+ * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
+ * @param userAccount
+ * @returns noteString That will be stored by the user
+ */
+async function deposit(
+  userAccount: PrivateKey,
+  ammount: number,
+  sender: PublicKey
+) {
+  //  Creating nullifier and nullifieremmiting event
+  await fetchAccount({ publicKey: zkAppSmartContractTestAddress });
+  let nullifierHash = await createNullifier(minadoPk);
+  //Creatting deposit commitment
+  let secret = Field.random();
+  let commitment = await createCommitment(nullifierHash, secret);
+  await sendFundstoMixer(userAccount, ammount, sender);
+  //A note is created and send in a deposit event
+  const note = {
+    currency: 'Mina',
+    amount: new UInt64(ammount),
+    nullifier: nullifierHash,
+    secret: secret,
+  };
+  //Generating notestring
+  const noteString = generateNoteString(note);
+  let timeStamp = UInt64.fromFields([Field(0)]);
+  //Emiting our deposit event
+  await emitDepositEvent(commitment, timeStamp);
+  //Emiting deposit action for updating IDs
+  await emitDepositAction();
+  console.log(`Note string ${noteString}`);
+  const mintAmount = UInt64.from(1);
+  const mintSignature = Signature.create(
+    minadoPrivK,
+    mintAmount.toFields().concat(zkAppSecondAddress.toFields())
+  );
+  //Minting a token as a reward to the user
+  await mintToken(sender, mintSignature);
+  await fetchEvents();
+  return noteString;
+}
+await deposit(minadoPrivK, 1, minadoPk);
+await shutdown();
+// }

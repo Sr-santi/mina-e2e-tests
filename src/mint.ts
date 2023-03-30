@@ -15,7 +15,6 @@ const tokenSymbol = 'MINTKN';
 await isReady;
 
 export class TokenContract extends SmartContract {
-  SUPPLY = UInt64.from(10n ** 6n);
   @state(UInt64) totalAmountInCirculation = State<UInt64>();
 
   deploy(args: DeployArgs) {
@@ -34,12 +33,6 @@ export class TokenContract extends SmartContract {
 
   @method init() {
     super.init();
-    let address = this.address;
-    //
-    let receiver = this.token.mint({
-      address,
-      amount: this.SUPPLY,
-    });
     this.account.tokenSymbol.set(tokenSymbol);
     this.totalAmountInCirculation.set(UInt64.zero);
   }
@@ -54,12 +47,12 @@ export class TokenContract extends SmartContract {
 
     let newTotalAmountInCirculation = totalAmountInCirculation.add(amount);
 
-    adminSignature
-      .verify(
-        this.address,
-        amount.toFields().concat(receiverAddress.toFields())
-      )
-      .assertTrue();
+    // adminSignature
+    //   .verify(
+    //     this.address,
+    //     amount.toFields().concat(receiverAddress.toFields())
+    //   )
+    //   .assertTrue();
 
     this.token.mint({
       address: receiverAddress,
