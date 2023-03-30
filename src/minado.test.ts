@@ -125,15 +125,23 @@ describe('Minado E2E tests', () => {
   });
 
   //When you deploy the contract and run it once then there should be one event with the type nullifier
-  it('Test to the event Nullifier fuction which emmits and event ', async () => {
-    let eventsTx = await Mina.transaction(
-      { sender: minadoPk, fee: defaultFee },
-      () => {
-        let depositCommitment = Field(0);
-        zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
-      }
-    );
-  });
+  it(
+    'Test to the event Nullifier fuction which emmits and event ',
+    async () => {
+      const zkAppTestKey = PrivateKey.random();
+      let eventsTx = await Mina.transaction(
+        { sender: minadoPk, fee: defaultFee },
+        () => {
+          let depositCommitment = Field(0);
+          zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
+        }
+      );
+      await eventsTx.prove();
+      await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+      console.log('Transaction send to the blockchain successfully', eventsTx);
+    },
+    5 * 60 * 1000
+  );
 
   //This fucntion tests the mint toekn method
   // it('Mint token method test, it should succesfully mint a token', async () => {
