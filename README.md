@@ -49,15 +49,15 @@ Please feel free to reach out with feedback to ()
 
 ## TODO LIST
 1 - Recursion NOT DONE
-2 - Call stack composability:  DONE
-3. Actions: DONE WITH SOME BUGS 
-4 - Events: DONE 
+2 - Call stack composability:  DONE IN mintMinadoToken 
+3. Actions: DONE WITH SOME BUGS DONE IN updateIdOfDeposit
+4 - Events: DONE DONE IN emitNullifierEvent 
 5 - Preconditions (account):Simple bug needs fix
 6 - Preconditions (network):Simple bug needs fix
 GlobalSlot
-7 - Permissions: DONE
-8 - Deploy SC: DONE
-9 - TOKENS : DONE
+7 - Permissions: DONE IN DEPLOY
+8 - Deploy SC: DONE IN DEPLOY 
+9 - TOKENS : DONE MINTNOTION
 TESTS: In progress
 
 
