@@ -29,8 +29,8 @@ const tokenContractAddress =
   'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
 
 let publicKeyTokenContract;
-let zkTokenContract;
-let zkAppTest;
+let zkTokenContract: TokenContract;
+let zkAppTest: test;
 
 beforeAll(async () => {
   zkAppTest = new test(PublicKey.fromBase58(zkAppSmartContractTestAddress));
@@ -125,15 +125,15 @@ describe('Minado E2E tests', () => {
   });
 
   //When you deploy the contract and run it once then there should be one event with the type nullifier
-  // it('Test to the event Nullifier fuction which emmits and event ', async () => {
-  //   let eventsTx = await Mina.transaction(
-  //     { sender: minadoPk, fee: defaultFee },
-  //     () => {
-  //       let depositCommitment = Field(0);
-  //       zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
-  //     }
-  //   );
-  // });
+  it('Test to the event Nullifier fuction which emmits and event ', async () => {
+    let eventsTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        let depositCommitment = Field(0);
+        zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
+      }
+    );
+  });
 
   //This fucntion tests the mint toekn method
   // it('Mint token method test, it should succesfully mint a token', async () => {
