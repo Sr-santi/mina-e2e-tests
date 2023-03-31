@@ -40,6 +40,12 @@ type Note = {
   secret: Field;
 };
 
+beforeAll(async () => {
+  zkAppTest = new test(PublicKey.fromBase58(zkAppSmartContractTestAddress));
+  publicKeyTokenContract = PublicKey.fromBase58(tokenContractAddress);
+  zkTokenContract = new TokenContract(publicKeyTokenContract);
+});
+
 describe('Minado E2E tests', () => {
   let Blockchain;
   let minadoPk: any;
@@ -49,9 +55,6 @@ describe('Minado E2E tests', () => {
   let defaultFee2 = 200_000_000;
 
   beforeAll(async () => {
-    zkAppTest = new test(PublicKey.fromBase58(zkAppSmartContractTestAddress));
-    publicKeyTokenContract = PublicKey.fromBase58(tokenContractAddress);
-    zkTokenContract = new TokenContract(publicKeyTokenContract);
     await isReady;
     // contracts compilation
     await test.compile();
@@ -72,10 +75,8 @@ describe('Minado E2E tests', () => {
       minadoPk = PublicKey.fromBase58(
         'B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z'
       );
-      console.log('On Berkley ready')
+      console.log('On Berkley ready');
       Mina.setActiveInstance(Blockchain);
-      zkAppTest.verifyWithdrawTime()
-      
     } else {
       instance = Mina.LocalBlockchain();
       minadoPrivK = instance.testAccounts[0].privateKey;
@@ -134,10 +135,10 @@ describe('Minado E2E tests', () => {
       throw error;
     }
   }
-  it('Withdraw window time test', async () => {
-    console.log('This should fail')
-    // zkAppTest.verifyWithdrawTime()
-  });
+  // it('Withdraw window time test', async () => {
+  //   console.log('This should fail');
+  //   // zkAppTest.verifyWithdrawTime()
+  // });
   // ------------------------------------
   /**
    * DEPOSIT LOGIC TESTS
@@ -167,23 +168,23 @@ describe('Minado E2E tests', () => {
   //   }
   // });
 
-  // it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
-  //   let amount = 20;
-  //   let nullifier = createNullifier(minadoPk);
-  //   let secret = Field.random();
+  it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
+    let amount = 20;
+    let nullifier = createNullifier(minadoPk);
+    let secret = Field.random();
 
-  //   const note = {
-  //     currency: 'Mina',
-  //     amount: new UInt64(amount),
-  //     nullifier: nullifier,
-  //     secret: secret,
-  //   };
-  //   const noteString = generateNoteString(note);
-  //   const noteRegex =
-  //     /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
+    const note = {
+      currency: 'Mina',
+      amount: new UInt64(amount),
+      nullifier: nullifier,
+      secret: secret,
+    };
+    const noteString = generateNoteString(note);
+    const noteRegex =
+      /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
 
-  //   expect(noteString).toMatch(noteRegex);
-  // });
+    expect(noteString).toMatch(noteRegex);
+  });
 
   // it('With a given nullifier and secret it generates a commitment that is the poseidon hash of these two values', async () => {
   //   const nullifier = createNullifier(minadoPk);
