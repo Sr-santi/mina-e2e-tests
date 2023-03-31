@@ -88,13 +88,6 @@ export class test extends SmartContract {
     this.reducer.dispatch(increment);
     // return newDepositId;
   }
-  @method manageDeposit(userPublicKey: PublicKey, address: PublicKey) {
-    //Publick Key of the Ssecond Smart contract
-    let opsContract = new second(address);
-    // console.log(opsContract)
-    let nullifierHash = opsContract.createNullifier(userPublicKey);
-    return nullifierHash;
-  }
   //TODO: CHANGE SIGNATURE TYPE
   @method mintMinadoToken(tokenAddress:PublicKey,recieverAddress:PublicKey,signature:Signature){
     try{
@@ -125,6 +118,9 @@ export class test extends SmartContract {
     //   console.log(err);
     // }
     this.emitEvent('nullifier', nullifierHash);
+  }
+  @method verifyWithdrawTime(timestamp:Field){
+    //Network precondition
   }
   @method emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let deposit = {
