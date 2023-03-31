@@ -19,7 +19,7 @@ import {
   fetchEvents,
 } from 'snarkyjs';
 import { test } from './MinadoTestApp.js';
-import { mintToken } from './run.js';
+//import { mintToken } from './run.js';
 import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 import { TokenContract } from './mint.js';
 
@@ -28,7 +28,7 @@ const zkAppSmartContractTestAddress =
 const tokenContractAddress =
   'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
 
-let publicKeyTokenContract;
+let publicKeyTokenContract: PublicKey;
 let zkTokenContract: TokenContract;
 let zkAppTest: test;
 
@@ -45,6 +45,7 @@ describe('Minado E2E tests', () => {
   let minadoPrivK: PrivateKey;
   let instance: any;
   let defaultFee = 100_000_000;
+  let defaultFee2 = 200_000_000;
   let isEvent: Array<any>;
 
   beforeAll(async () => {
@@ -88,6 +89,30 @@ describe('Minado E2E tests', () => {
     console.log(filteredEvents);
     return filteredEvents.length ? true : false;
   }
+
+  async function mintToken(recieverAddress: PublicKey, signerPk: Signature) {
+    try {
+      const mint_txn = await Mina.transaction(
+        { sender: minadoPk, fee: defaultFee2 },
+        () => {
+          zkAppTest.mintMinadoToken(
+            publicKeyTokenContract,
+            recieverAddress,
+            signerPk
+          );
+        }
+      );
+
+      await mint_txn.prove();
+      mint_txn.sign([minadoPrivK]);
+      await mint_txn.send();
+      console.log(`Token mintented to ${recieverAddress}`);
+      console.log('Mint transaction', mint_txn.transaction);
+    } catch (error: any) {
+      console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+      throw error;
+    }
+  }
   // ------------------------------------
 
   //Just a text for making sure that we are in Berkley
@@ -108,60 +133,84 @@ describe('Minado E2E tests', () => {
     /**
      * Fetching the events
      */
-    // create an instance of the smart contract]\
-    // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-    let zkAppTest = new test(
-      PublicKey.fromBase58(zkAppSmartContractTestAddress)
-    );
-    // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-    let events = await zkAppTest.fetchEvents();
-    console.log('EVENTS');
-    console.log(events);
-    // console.log(events[0],events)
-    // let depositEvents = await isEventinArray(isEvent, 'deposit');
-    // let nullifierEevents = await isEventinArray(isEvent, 'deposit');
-    // expect(depositEvents).toBe(true);
-    // expect(nullifierEevents).toBe(true);
+    try {
+      // create an instance of the smart contract]\
+      // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
+      let zkAppTest = new test(
+        PublicKey.fromBase58(zkAppSmartContractTestAddress)
+      );
+      // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
+      let events = await zkAppTest.fetchEvents();
+      console.log('EVENTS');
+      console.log(events);
+      // console.log(events[0],events)
+      // let depositEvents = await isEventinArray(isEvent, 'deposit');
+      // let nullifierEevents = await isEventinArray(isEvent, 'deposit');
+      // expect(depositEvents).toBe(true);
+      // expect(nullifierEevents).toBe(true);
+    } catch (error: any) {
+      console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+      throw error;
+    }
   });
 
   //When you deploy the contract and run it once then there should be one event with the type nullifier
+  // it(
+  //   'Test to the event Nullifier fuction which emmits and event ',
+  //   async () => {
+  //     try {
+  //       const zkAppTestKey = PrivateKey.random();
+  //       let eventsTx = await Mina.transaction(
+  //         { sender: minadoPk, fee: defaultFee },
+  //         () => {
+  //           let depositCommitment = Field(0);
+  //           zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
+  //         }
+  //       );
+  //       await eventsTx.prove();
+  //       await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
+  //       console.log(
+  //         'Transaction send to the blockchain successfully',
+  //         eventsTx
+  //       );
+  //     } catch (error: any) {
+  //       console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+  //       throw error;
+  //     }
+  //   },
+  //   5 * 60 * 1000
+  // );
+
+  //This fucntion tests the mint token method
   it(
-    'Test to the event Nullifier fuction which emmits and event ',
+    'Mint token method test, it should succesfully mint a token',
     async () => {
-      const zkAppTestKey = PrivateKey.random();
-      let eventsTx = await Mina.transaction(
-        { sender: minadoPk, fee: defaultFee },
-        () => {
-          let depositCommitment = Field(0);
-          zkAppTest.emitNullifierEvent(depositCommitment, minadoPk);
-        }
-      );
-      await eventsTx.prove();
-      await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-      console.log('Transaction send to the blockchain successfully', eventsTx);
+      try {
+        // await initTok  `enInstance();
+        const mintAmount = UInt64.from(1);
+        const mintSignature = Signature.create(
+          minadoPrivK,
+          mintAmount.toFields().concat(publicKeyTokenContract.toFields())
+        );
+        //await mintToken(minadoPk, mintSignature);
+        await fetchAccount({
+          publicKey: 'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN',
+        });
+        await mintToken(minadoPk, mintSignature);
+        //let totalAmountInCirculation = this.totalAmountInCirculation.get();
+        let totalAmountInCirculation =
+          zkTokenContract.totalAmountInCirculation.get();
+        zkTokenContract.totalAmountInCirculation.assertEquals(
+          totalAmountInCirculation
+        );
+        console.log('TOKENS TOTAL', totalAmountInCirculation.toString());
+      } catch (error: any) {
+        console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+        throw error;
+      }
     },
     5 * 60 * 1000
   );
-
-  //This fucntion tests the mint toekn method
-  // it('Mint token method test, it should succesfully mint a token', async () => {
-  //   const mintAmount = UInt64.from(1);
-  //   const mintSignature = Signature.create(
-  //     minadoPrivK,
-  //     mintAmount.toFields().concat(publicKeyTokenContract.toFields())
-  //   );
-  //   await mintToken(minadoPk, mintSignature);
-  //   await fetchAccount({
-  //     publicKey: 'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN',
-  //   });
-  //   // await mintToken(minadoPk,mintSignature)   let totalAmountInCirculation = this.totalAmountInCirculation.get();
-  //   let totalAmountInCirculation =
-  //     zkTokenContract.totalAmountInCirculation.get();
-  //   zkTokenContract.totalAmountInCirculation.assertEquals(
-  //     totalAmountInCirculation
-  //   );
-  //   console.log('TOKENS TOTAL', totalAmountInCirculation.toString());
-  // });
 
   //This test needs to validate that the deposit events that are being created in the Zkapp live on-chain
   // it(`Events tests`, async () => {
