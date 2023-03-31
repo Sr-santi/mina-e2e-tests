@@ -25,6 +25,9 @@ await isReady;
 
 let initialIndex: Field = new Field(0n);
  const mintAmount = UInt64.from(1);
+ const startDate = UInt64.from(Date.UTC(2022, 9, 1));
+ const endDate = UInt64.from(Date.UTC(2022, 10, 1));
+ 
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
 
@@ -119,8 +122,9 @@ export class test extends SmartContract {
     // }
     this.emitEvent('nullifier', nullifierHash);
   }
-  @method verifyWithdrawTime(timestamp:Field){
+  @method verifyWithdrawTime(){
     //Network precondition
+    this.network.timestamp.assertBetween(startDate, endDate);
   }
   @method emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let deposit = {
