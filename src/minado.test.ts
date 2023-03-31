@@ -23,7 +23,7 @@ import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 import { TokenContract } from './mint.js';
 ///Setup
 const zkAppSmartContractTestAddress =
-  'B62qr2JMr3GDmGu9vHxaAC1WWKBwcvSeEBJ5Q3dKEycFSMSs1JKQqZC';
+  'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
 const tokenContractAddress =
   'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
 //Variables
@@ -57,8 +57,6 @@ describe('Minado E2E tests', () => {
   beforeAll(async () => {
     await isReady;
     // contracts compilation
-    await test.compile();
-    await TokenContract.compile();
 
     const isBerkeley = process.env.TEST_NETWORK === 'true';
 
@@ -83,6 +81,8 @@ describe('Minado E2E tests', () => {
       minadoPk = minadoPrivK.toPublicKey();
       Mina.setActiveInstance(instance);
     }
+    await test.compile();
+    await TokenContract.compile();
   });
 
   afterAll(() => {
