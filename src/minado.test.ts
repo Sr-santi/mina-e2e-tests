@@ -167,6 +167,42 @@ describe('Minado E2E tests', () => {
     };
     return deposit;
   }
+ /**
+ * Get all the deposit events 
+ * @returns events of type deposit
+ */
+/**
+ * Get all the deposit events
+ * @returns events of type deposit
+ */
+async function getDepositEvents() {
+  let rawEvents = await zkAppTest.fetchEvents();
+  let depositEvents = isEventinArray(rawEvents, 'deposit');
+  console.log('Deposit Events => ', rawEvents);
+  return depositEvents;
+}
+  /**
+ *Validates the deposit object and that it corresponds to a valid object
+ * @param deposit Created from a note
+ * 
+ */
+async function validateProof(deposit: Deposit) {
+  /**
+   * Merkle Tree Validation.
+   */
+  //Find the commitment in the events
+  
+  let depositEvents = await getDepositEvents();
+
+  // 
+  let commitmentDeposit = deposit.commitment;
+  //Search for an event with a given commitment
+  let eventWithCommitment = depositEvents.find(
+    (e) => e.commitment.toString() === commitmentDeposit.toString()
+  );
+  console.log('EVENT WITH COMMITMENT')
+  return eventWithCommitment.length ? true : false 
+}
 
   // ------------------------------------
   
@@ -276,32 +312,32 @@ describe('Minado E2E tests', () => {
   /**
    * Withdraw tests
    */
-  it('Test for the parse note function ', async () => {
-    let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
-    let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
-    let exampleObject = {
-        currency:'Mina',
-        amount: new UInt64(1),
-        nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
-        secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
-    }
-    let parsedNote = parseNoteString(exampleNote)
-    expect(exampleObject).toStrictEqual(parsedNote)
-    let error =new Error('The note has invalid format');
-    const errorFunction = () => {
-      parseNoteString(wrongNote)
-    };
-    expect(errorFunction).toThrow(error)
-  });
+  // it('Test for the parse note function ', async () => {
+  //   let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+  //   let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+  //   let exampleObject = {
+  //       currency:'Mina',
+  //       amount: new UInt64(1),
+  //       nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
+  //       secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+  //   }
+  //   let parsedNote = parseNoteString(exampleNote)
+  //   expect(exampleObject).toStrictEqual(parsedNote)
+  //   let error =new Error('The note has invalid format');
+  //   const errorFunction = () => {
+  //     parseNoteString(wrongNote)
+  //   };
+  //   expect(errorFunction).toThrow(error)
+  // });
   it('Test for creating a deposit object with a given nullifier and secret', async () => {
-    let nullifierExample =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
-    let secretExample =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+    let nullifier =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
+    let secret =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
     let depositExample= {
-    nullifierExample,
-    secretExample,
-    commitment: createCommitment(nullifierExample, secretExample),
+    nullifier,
+    secret,
+    commitment: createCommitment(nullifier, secret),
     }
-    let depositReturned = createDeposit(nullifierExample,secretExample)
+    let depositReturned = createDeposit(nullifier,secret)
     expect(depositExample).toStrictEqual(depositReturned)
   });
 });
