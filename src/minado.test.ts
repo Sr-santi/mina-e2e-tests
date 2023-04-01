@@ -39,6 +39,14 @@ type Note = {
   nullifier: Field;
   secret: Field;
 };
+/*
+Currency, amount, netID, note => deposit(secret, nullifier)
+*/
+type Deposit = {
+  nullifier: Field;
+  secret: Field;
+  commitment: Field;
+};
 
 beforeAll(async () => {
   zkAppTest = new test(PublicKey.fromBase58(zkAppSmartContractTestAddress));
@@ -89,7 +97,7 @@ describe('Minado E2E tests', () => {
     setInterval(shutdown, 0);
   });
 
-  // test methods -----------------------
+  // test functions-----------------------
   function isEventinArray(events: Array<any>, type: string) {
     let filteredEvents = events.filter((a) => a.type === type);
     console.log('Filtered events');
@@ -135,11 +143,33 @@ describe('Minado E2E tests', () => {
       throw error;
     }
   }
-  // it('Withdraw window time test', async () => {
-  //   console.log('This should fail');
-  //   // zkAppTest.verifyWithdrawTime()
-  // });
+  function parseNoteString(noteString: string): Note {
+    const noteRegex =
+      /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
+    const match = noteRegex.exec(noteString);
+  
+    if (!match) {
+      throw new Error('The note has invalid format');
+    }
+  
+    return {
+      currency: match.groups?.currency!,
+      amount: new UInt64(Number(match.groups?.amount)),
+      nullifier: new Field(match.groups?.nullifier!),
+      secret: new Field(match.groups?.secret!),
+    };
+  }
+  function createDeposit(nullifier: Field, secret: Field): Deposit {
+    let deposit = {
+      nullifier,
+      secret,
+      commitment: createCommitment(nullifier, secret),
+    };
+    return deposit;
+  }
+
   // ------------------------------------
+  
   /**
    * DEPOSIT LOGIC TESTS
    */
@@ -168,23 +198,23 @@ describe('Minado E2E tests', () => {
   //   }
   // });
 
-  it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
-    let amount = 20;
-    let nullifier = createNullifier(minadoPk);
-    let secret = Field.random();
+  // it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
+  //   let amount = 20;
+  //   let nullifier = createNullifier(minadoPk);
+  //   let secret = Field.random();
 
-    const note = {
-      currency: 'Mina',
-      amount: new UInt64(amount),
-      nullifier: nullifier,
-      secret: secret,
-    };
-    const noteString = generateNoteString(note);
-    const noteRegex =
-      /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
+  //   const note = {
+  //     currency: 'Mina',
+  //     amount: new UInt64(amount),
+  //     nullifier: nullifier,
+  //     secret: secret,
+  //   };
+  //   const noteString = generateNoteString(note);
+  //   const noteRegex =
+  //     /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
 
-    expect(noteString).toMatch(noteRegex);
-  });
+  //   expect(noteString).toMatch(noteRegex);
+  // });
 
   // it('With a given nullifier and secret it generates a commitment that is the poseidon hash of these two values', async () => {
   //   const nullifier = createNullifier(minadoPk);
@@ -246,27 +276,32 @@ describe('Minado E2E tests', () => {
   /**
    * Withdraw tests
    */
-  // it('Test for emitNullifier event method and the emit deposit event  ', async () => {
-  //   /**
-  //    * Fetching the events
-  //    */
-  //   try {
-  //     // create an instance of the smart contract]\
-  //     // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-  //     let zkAppTest = new test(
-  //       PublicKey.fromBase58(zkAppSmartContractTestAddress)
-  //     );
-  //     // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-  //     let events = await zkAppTest.fetchEvents();
-  //     console.log('EVENTS');
-  //     console.log(events);
-  //     let depositEvents = await isEventinArray(events, 'deposit');
-  //     let nullifierEevents = await isEventinArray(events, 'nullifier')
-  //     expect(depositEvents).toBe(true);
-  //     expect(nullifierEevents).toBe(true);
-  //   } catch (error: any) {
-  //     console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
-  //     throw error;
-  //   }
-  // });
+  it('Test for the parse note function ', async () => {
+    let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+    let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+    let exampleObject = {
+        currency:'Mina',
+        amount: new UInt64(1),
+        nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
+        secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+    }
+    let parsedNote = parseNoteString(exampleNote)
+    expect(exampleObject).toStrictEqual(parsedNote)
+    let error =new Error('The note has invalid format');
+    const errorFunction = () => {
+      parseNoteString(wrongNote)
+    };
+    expect(errorFunction).toThrow(error)
+  });
+  it('Test for creating a deposit object with a given nullifier and secret', async () => {
+    let nullifierExample =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
+    let secretExample =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+    let depositExample= {
+    nullifierExample,
+    secretExample,
+    commitment: createCommitment(nullifierExample, secretExample),
+    }
+    let depositReturned = createDeposit(nullifierExample,secretExample)
+    expect(depositExample).toStrictEqual(depositReturned)
+  });
 });

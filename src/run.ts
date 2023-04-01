@@ -263,6 +263,12 @@ async function deposit(
 /**
  * WITHDRAW LOGIC FUNCTIONS 
  */
+//-----------------------------------------
+/**
+ * Fucntion that parses a note 
+ * @param noteString Hold by the user 
+ * @returns 
+ */
 function parseNoteString(noteString: string): Note {
   const noteRegex =
     /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
@@ -279,6 +285,12 @@ function parseNoteString(noteString: string): Note {
     secret: new Field(match.groups?.secret!),
   };
 }
+/**
+ * Creates a deposit object to get a commitment from using a nullifier and a secret
+ * @param nullifier Comes from the parsed note
+ * @param secret Comes from the parsed node 
+ * @returns 
+ */
 function createDeposit(nullifier: Field, secret: Field): Deposit {
   let deposit = {
     nullifier,
@@ -289,9 +301,9 @@ function createDeposit(nullifier: Field, secret: Field): Deposit {
   return deposit;
 }
 /**
- *
+ *Validates the deposit object and that it corresponds to a valid object
  * @param deposit Created from a note
- * Should return a Merkle Proof that will be validated by the smart contract
+ * 
  */
 async function validateProof(deposit: Deposit) {
   /**
@@ -311,6 +323,10 @@ async function validateProof(deposit: Deposit) {
   return eventWithCommitment.length ? true : false 
 
 }
+/**
+ * Get all the deposit events 
+ * @returns events of type deposit
+ */
 async function getDepositEvents() {
   let rawEvents = await zkAppTest.fetchEvents();
   let depositEvents:Array<any> =[]; 
@@ -324,6 +340,10 @@ async function getDepositEvents() {
   console.log('Deposit Events => ', depositEvents)
   return depositEvents;
 }
+/**
+ * Emits a nullfier event after a withdraw tranaaction was succesful
+ * @param nullifierHash 
+ */
 async function emitNullifierEvent(nullifierHash:Field) {
     //Transaction
     let eventsTx = await Mina.transaction(
@@ -336,7 +356,7 @@ async function emitNullifierEvent(nullifierHash:Field) {
     await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
 }
 /**
- * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+ * After the nullifier and the deposit event is validated the money should be withdrawn 
  * @param sender
  * @param amount
  */
@@ -358,6 +378,10 @@ async function withdrawFunds(
   await tx.sign([zkAppTestKey, senderPrivKey]).send();
   console.log('Funds sent to minado');
 }
+/**
+ * Get nullifier events filtered by type 
+ * @returns Events with type nullifier
+ */
 async function getNullifierEvents() {
   let rawEvents = await zkAppTest.fetchEvents();
   console.log('Events coming => ', rawEvents)
