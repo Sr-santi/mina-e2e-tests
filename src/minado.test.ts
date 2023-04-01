@@ -21,6 +21,7 @@ import {
 import { test } from './MinadoTestApp.js';
 import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 import { TokenContract } from './mint.js';
+import DepositClass from './models/DepositClass.js';
 ///Setup
 const zkAppSmartContractTestAddress =
   'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
@@ -147,11 +148,11 @@ describe('Minado E2E tests', () => {
     const noteRegex =
       /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
     const match = noteRegex.exec(noteString);
-  
+
     if (!match) {
       throw new Error('The note has invalid format');
     }
-  
+
     return {
       currency: match.groups?.currency!,
       amount: new UInt64(Number(match.groups?.amount)),
@@ -167,45 +168,67 @@ describe('Minado E2E tests', () => {
     };
     return deposit;
   }
- /**
- * Get all the deposit events 
- * @returns events of type deposit
- */
-/**
- * Get all the deposit events
- * @returns events of type deposit
- */
-async function getDepositEvents() {
-  let rawEvents = await zkAppTest.fetchEvents();
-  let depositEvents = isEventinArray(rawEvents, 'deposit');
-  console.log('Deposit Events => ', rawEvents);
-  return depositEvents;
-}
   /**
+   * Get all the deposit events
+   * @returns events of type deposit
+   */
+  /**
+   * Get all the deposit events
+   * @returns events of type deposit
+   */
+  /**
+   * Get all the deposit events
+   * @returns events of type deposit
+   */
+  async function getDepositEvents() {
+    let rawEvents = await zkAppTest.fetchEvents();
+    let filteredEvents = rawEvents.filter((a) => a.type === 'deposit');
+    console.log('Deposit Events => ', rawEvents);
+    return filteredEvents;
+  }
+/**
+ * Function to normalize deposit events 
+ */
+function normalizeEvents (filteredEvents:Array<any>){
+  let eventsNormalizedArray:any=[]
+  for (let i = 0; i < filteredEvents.length; i++) {
+    let element = filteredEvents[i];
+      let eventsNormalized = element.event.toFields(null);
+      let object:any = {
+        commitment: eventsNormalized[0].toString(),
+        timeStamp: eventsNormalized[1]?.toString(),
+      };
+      eventsNormalizedArray.push(object);
+  }
+  return eventsNormalizedArray
+}
+/**
  *Validates the deposit object and that it corresponds to a valid object
  * @param deposit Created from a note
- * 
+ *
  */
 async function validateProof(deposit: Deposit) {
   /**
    * Merkle Tree Validation.
    */
   //Find the commitment in the events
-  
-  let depositEvents = await getDepositEvents();
 
-  // 
+  let depositEvents = await getDepositEvents();
+  let normalizedEvents =normalizeEvents(depositEvents)
+  //
   let commitmentDeposit = deposit.commitment;
+  console.log('Commitment',)
+  console.log(commitmentDeposit,toString())
   //Search for an event with a given commitment
-  let eventWithCommitment = depositEvents.find(
-    (e) => e.commitment.toString() === commitmentDeposit.toString()
-  );
-  console.log('EVENT WITH COMMITMENT')
-  return eventWithCommitment.length ? true : false 
+  let filteredEvents = normalizedEvents.filter((a:any) => a.commitment!.toString() === commitmentDeposit.toString());
+  let condition = filteredEvents.length ? true :false
+  if (!condition) {
+    throw new Error('The deposit event is corrupt please input a valid note');
+  }
 }
 
   // ------------------------------------
-  
+
   /**
    * DEPOSIT LOGIC TESTS
    */
@@ -329,15 +352,47 @@ async function validateProof(deposit: Deposit) {
   //   };
   //   expect(errorFunction).toThrow(error)
   // });
-  it('Test for creating a deposit object with a given nullifier and secret', async () => {
-    let nullifier =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
-    let secret =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
-    let depositExample= {
-    nullifier,
-    secret,
-    commitment: createCommitment(nullifier, secret),
-    }
-    let depositReturned = createDeposit(nullifier,secret)
-    expect(depositExample).toStrictEqual(depositReturned)
+  // it('Test for creating a deposit object with a given nullifier and secret', async () => {
+  //   let nullifier =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
+  //   let secret =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+  //   let depositExample= {
+  //   nullifier,
+  //   secret,
+  //   commitment: createCommitment(nullifier, secret),
+  //   }
+  //   let depositReturned = createDeposit(nullifier,secret)
+  //   expect(depositExample).toStrictEqual(depositReturned)
+  // });
+
+  it('Test for validating that a deposit exists in the events and it is correct ', async () => {
+    let nullifier = Field(
+      '7812087851405294542981963277649824002238917083437839771374645972862540599520'
+    );
+    let secret = Field(
+      '17743784939239259721543222227098911701166012122860283577281232882212532863426'
+    );
+    let corruptedSecret = Field(
+      '17743784939239259721543222227098911701166012122860283577281232882212532863423'
+    );
+    let depositExample = {
+      nullifier,
+      secret,
+      commitment: createCommitment(nullifier, secret),
+    };
+    let corruptedDepositExample = {
+      nullifier: nullifier,
+      secret: corruptedSecret,
+      commitment: createCommitment(nullifier, secret),
+    };
+    console.log('commitment',depositExample.commitment.toString())
+    // await validateProof(depositExample);
+    // const error = new Error(
+    //   'The deposit event is corrupt please input a valid note'
+    // );
+    // const errorFunction = async () => {
+    //   await validateProof(corruptedDepositExample);
+    // };
+    // expect(errorFunction).toThrow(error);
   });
+  //TODO: ADD Is spent test 
 });

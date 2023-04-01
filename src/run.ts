@@ -28,7 +28,7 @@ import { TokenContract } from './mint.js';
 // export {init}
 const berkley = true;
 const zkAppSmartContractTestAddress =
-  'B62qr2JMr3GDmGu9vHxaAC1WWKBwcvSeEBJ5Q3dKEycFSMSs1JKQqZC';
+  'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
 const zkAppSmartContractSecondAddress =
   'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
 
@@ -235,6 +235,7 @@ async function deposit(
   //Creatting deposit commitment
   let secret = Field.random();
   let commitment = await createCommitment(nullifierHash, secret);
+  console.log('commitment',commitment.toString())
   await sendFundstoMixer(userAccount, ammount, sender);
   //A note is created and send in a deposit event
   const note = {
@@ -304,6 +305,22 @@ function createDeposit(nullifier: Field, secret: Field): Deposit {
   return deposit;
 }
 /**
+ * Function to normalize deposit events 
+ */
+function normalizeEvents (filteredEvents:Array<any>){
+  let eventsNormalizedArray:any=[]
+  for (let i = 0; i < filteredEvents.length; i++) {
+    let element = filteredEvents[i];
+      let eventsNormalized = element.event.toFields(null);
+      let object:any = {
+        commitment: eventsNormalized[0].toString(),
+        timeStamp: eventsNormalized[1]?.toString(),
+      };
+      eventsNormalizedArray.push(object);
+  }
+  return eventsNormalizedArray
+}
+/**
  *Validates the deposit object and that it corresponds to a valid object
  * @param deposit Created from a note
  *
@@ -315,15 +332,15 @@ async function validateProof(deposit: Deposit) {
   //Find the commitment in the events
 
   let depositEvents = await getDepositEvents();
-
+  let normalizedEvents =normalizeEvents(depositEvents)
   //
   let commitmentDeposit = deposit.commitment;
   //Search for an event with a given commitment
-  let eventWithCommitment = depositEvents.find(
-    (e) => e.commitment.toString() === commitmentDeposit.toString()
-  );
-  console.log('EVENT WITH COMMITMENT');
-  return eventWithCommitment.length ? true : false;
+  let filteredEvents = normalizedEvents.filter((a:any) => a.commitment!.toString() === commitmentDeposit.toString());
+  let condition = filteredEvents.length ? true :false
+  if (!condition) {
+    throw new Error('The deposit event is corrupt please input a valid note');
+  }
 }
 /**
  * Get all the deposit events
@@ -331,9 +348,9 @@ async function validateProof(deposit: Deposit) {
  */
 async function getDepositEvents() {
   let rawEvents = await zkAppTest.fetchEvents();
-  let depositEvents = isEventinArray(rawEvents, 'deposit');
+  let filteredEvents = rawEvents.filter((a) => a.type === 'deposit');
   console.log('Deposit Events => ', rawEvents);
-  return depositEvents;
+  return filteredEvents;
 }
 // test functions-----------------------
 function isEventinArray(events: Array<any>, type: string) {
@@ -446,6 +463,7 @@ async function withdraw(noteString: string, userAddress: PublicKey) {
     return 'error';
   }
 }
+
 await deposit(minadoPrivK, 1, minadoPk);
 await shutdown();
 // }
