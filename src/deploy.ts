@@ -9,6 +9,7 @@ import {
 } from 'snarkyjs';
 import { second } from './second.js';
 import { TokenContract } from './mint.js';
+import { Program } from './zkProgram.js';
 // setup
 // const Local = Mina.LocalBlockchain();
 // Mina.setActiveInstance(Local);
@@ -47,6 +48,7 @@ async function deploy(berkley: boolean) {
 
   //Setup
   //TODO:Also change when deploying
+  await Program.compile();
   let { verificationKey } = await test.compile();
   let defaultFee = 300_000_000;
 

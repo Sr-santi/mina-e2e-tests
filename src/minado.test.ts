@@ -21,6 +21,8 @@ import {
 import { test } from './MinadoTestApp.js';
 import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 import { TokenContract } from './mint.js';
+import { Program, ProgramInput } from './zkProgram.js';
+await isReady;
 ///Setup
 const zkAppSmartContractTestAddress =
   'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
@@ -51,13 +53,11 @@ describe('Minado E2E tests', () => {
   let minadoPk: any;
   let minadoPrivK: PrivateKey;
   let instance: any;
+  let verificationKey: string;
   let defaultFee = 100_000_000;
   let defaultFee2 = 200_000_000;
 
   beforeAll(async () => {
-    await isReady;
-    // contracts compilation
-
     const isBerkeley = process.env.TEST_NETWORK === 'true';
 
     // Mina Blockchain instance : local | berkeley
@@ -81,6 +81,10 @@ describe('Minado E2E tests', () => {
       minadoPk = minadoPrivK.toPublicKey();
       Mina.setActiveInstance(instance);
     }
+    // compile zk program
+    const { verificationKey: key } = await Program.compile();
+    verificationKey = key;
+    // compile contracts
     await test.compile();
     await TokenContract.compile();
   });
@@ -269,4 +273,26 @@ describe('Minado E2E tests', () => {
   //     throw error;
   //   }
   // });
+  it('Claim tokens and update rewards', async () => {
+    try {
+      const programInput = new ProgramInput({
+        permissionUntilBlockHeight: UInt32.from(10_000),
+        publicKey: publicKeyTokenContract,
+        signature: Signature.create(minadoPrivK, Field(0).toFields()),
+      });
+      // creatign proof using zkprogram.
+      const proof = await Program.run(programInput);
+      const newRewardPerBlock = UInt64.from(100);
+      const tx = await Mina.transaction({ sender: minadoPk, fee: 1e9 }, () => {
+        zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
+        zkAppTest.approveAccountUpdate(zkAppTest.self);
+      });
+      await tx.prove();
+      await tx.sign([minadoPrivK]).send();
+      console.log('Minedo.updateRewardsPerBlock() successful', tx.toPretty());
+    } catch (error: any) {
+      console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+      throw error;
+    }
+  });
 });

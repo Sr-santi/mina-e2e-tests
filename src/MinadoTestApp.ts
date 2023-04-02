@@ -17,14 +17,18 @@ import {
   UInt64,
   Permissions,
   Signature,
+  UInt32,
+  AccountUpdate,
 } from 'snarkyjs';
 import { second } from './second.js';
 import DepositClass from './models/DepositClass.js';
 import { TokenContract } from './mint.js';
+import { ProgramProof } from './zkProgram.js';
 await isReady;
 
 let initialIndex: Field = new Field(0n);
 const mintAmount = UInt64.from(1);
+const initialReward = UInt64.from(5);
 
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
@@ -41,11 +45,13 @@ export class test extends SmartContract {
   @state(Field) merkleTreeRoot = State<Field>();
   @state(Field) lastIndexAdded = State<Field>();
   //State variables offchain storage
-  @state(PublicKey) storageServerPublicKey = State<PublicKey>();
+  //@state(PublicKey) storageServerPublicKey = State<PublicKey>();
   @state(Field) storageNumber = State<Field>();
   @state(Field) storageTreeRoot = State<Field>();
   @state(Field) nullifierHash = State<Field>();
   @state(Field) depositId = State<Field>();
+
+  @state(UInt64) rewardPerBlock = State<UInt64>();
   /**
    * by making this a `@method`, we ensure that a proof is created for the state initialization.
    * alternatively (and, more efficiently), we could have used `super.init()` inside `update()` below,
@@ -60,6 +66,8 @@ export class test extends SmartContract {
     this.lastIndexAdded.set(initialIndex);
     let merkleRoot = minadoMerkleTree.getRoot();
     this.merkleTreeRoot.set(merkleRoot);
+    //TODO: this is generating an error reward init
+    this.rewardPerBlock.set(initialReward);
   }
 
   deploy(args: DeployArgs) {
@@ -134,5 +142,26 @@ export class test extends SmartContract {
       timeStamp: timeStamp,
     };
     this.emitEvent('deposit', deposit);
+    this.approve;
+  }
+
+  @method updateRewardsPerBlock(
+    proof: ProgramProof,
+    newRewardPerBlock: UInt64
+  ) {
+    proof.verify();
+
+    const { permissionUntilBlockHeight } = proof.publicInput;
+    const blockHeight = this.network.blockchainLength.get();
+    this.network.blockchainLength.assertEquals(blockHeight);
+    blockHeight.assertLessThan(permissionUntilBlockHeight);
+
+    const rewardPerBlock = this.rewardPerBlock.get();
+    this.rewardPerBlock.assertEquals(rewardPerBlock);
+    this.rewardPerBlock.set(newRewardPerBlock);
+  }
+
+  @method approveAccountUpdate(accountUpdate: AccountUpdate) {
+    this.approve(accountUpdate, AccountUpdate.Layout.AnyChildren);
   }
 }
