@@ -290,7 +290,7 @@ describe('Minado E2E tests', () => {
         const tx = await Mina.transaction(
           { sender: minadoPk, fee: 1e9 },
           () => {
-            // zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
+            zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
             zkAppTest.approveAccountUpdate(zkAppTest.self);
           }
         );
