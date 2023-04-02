@@ -61,7 +61,7 @@ const main = async () => {
   } catch (error) {
     console.log(error);
   }
-  console.log('doneee')
+  console.log('doneee');
   await shutdown();
 };
 

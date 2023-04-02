@@ -277,10 +277,10 @@ describe('Minado E2E tests', () => {
     try {
       const programInput = new ProgramInput({
         permissionUntilBlockHeight: UInt32.from(10_000),
-        publicKey: publicKeyTokenContract,
+        publicKey: minadoPk,
         signature: Signature.create(minadoPrivK, Field(0).toFields()),
       });
-      // creatign proof using zkprogram.
+      // creatign proof using zkprosgram.
       console.log('Creating proof...');
       const proof = await Program.run(programInput);
       const newRewardPerBlock = UInt64.from(100);
