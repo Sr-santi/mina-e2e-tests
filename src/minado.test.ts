@@ -273,27 +273,35 @@ describe('Minado E2E tests', () => {
   //     throw error;
   //   }
   // });
-  it('Claim tokens and update rewards', async () => {
-    try {
-      const programInput = new ProgramInput({
-        permissionUntilBlockHeight: UInt32.from(10_000),
-        publicKey: minadoPk,
-        signature: Signature.create(minadoPrivK, Field(0).toFields()),
-      });
-      // creatign proof using zkprosgram.
-      console.log('Creating proof...');
-      const proof = await Program.run(programInput);
-      const newRewardPerBlock = UInt64.from(100);
-      const tx = await Mina.transaction({ sender: minadoPk, fee: 1e9 }, () => {
-        // zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
-        zkAppTest.approveAccountUpdate(zkAppTest.self);
-      });
-      await tx.prove();
-      await tx.sign([minadoPrivK]).send();
-      console.log('Minedo.updateRewardsPerBlock() successful', tx.toPretty());
-    } catch (error: any) {
-      console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
-      throw error;
-    }
-  });
+  it(
+    'Claim tokens and update rewards',
+    async () => {
+      try {
+        const programInput = new ProgramInput({
+          permissionUntilBlockHeight: UInt32.from(10_000),
+          publicKey: minadoPk,
+          signature: Signature.create(minadoPrivK, Field(0).toFields()),
+        });
+        // creatign proof using zkprosgram.
+        console.log('Creating proof...');
+        const proof = await Program.run(programInput);
+        console.log('Proof created');
+        const newRewardPerBlock = UInt64.from(100);
+        const tx = await Mina.transaction(
+          { sender: minadoPk, fee: 1e9 },
+          () => {
+            // zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
+            zkAppTest.approveAccountUpdate(zkAppTest.self);
+          }
+        );
+        await tx.prove();
+        await tx.sign([minadoPrivK]).send();
+        console.log('Minedo.updateRewardsPerBlock() successful', tx.toPretty());
+      } catch (error: any) {
+        console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+        throw error;
+      }
+    },
+    5 * 60 * 1000
+  );
 });
