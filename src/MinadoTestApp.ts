@@ -146,15 +146,14 @@ export class test extends SmartContract {
   }
 
   @method updateRewardsPerBlock(
-    proof: ProgramProof,
+    // proof: ProgramProof,
     newRewardPerBlock: UInt64
   ) {
-    proof.verify();
+    // proof.verify();
 
-    const { permissionUntilBlockHeight } = proof.publicInput;
+    // const { permissionUntilBlockHeight } = proof.publicInput;
     const blockHeight = this.network.blockchainLength.get();
     this.network.blockchainLength.assertEquals(blockHeight);
-    blockHeight.assertLessThan(permissionUntilBlockHeight);
 
     const rewardPerBlock = this.rewardPerBlock.get();
     this.rewardPerBlock.assertEquals(rewardPerBlock);

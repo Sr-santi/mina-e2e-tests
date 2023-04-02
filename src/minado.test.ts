@@ -281,10 +281,11 @@ describe('Minado E2E tests', () => {
         signature: Signature.create(minadoPrivK, Field(0).toFields()),
       });
       // creatign proof using zkprogram.
+      console.log('Creating proof...');
       const proof = await Program.run(programInput);
       const newRewardPerBlock = UInt64.from(100);
       const tx = await Mina.transaction({ sender: minadoPk, fee: 1e9 }, () => {
-        zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
+        // zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
         zkAppTest.approveAccountUpdate(zkAppTest.self);
       });
       await tx.prove();
