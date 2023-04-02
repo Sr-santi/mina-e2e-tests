@@ -7,6 +7,7 @@ import {
   UInt32,
   PrivateKey,
   isReady,
+  shutdown,
 } from 'snarkyjs';
 import { test } from './MinadoTestApp.js';
 import { TokenContract } from './mint.js';
@@ -56,9 +57,12 @@ const main = async () => {
     // creatign proof using zkprogram.
     console.log('Creating proof...');
     const proof = await Program.run(programInput);
+    console.log('Proof created');
   } catch (error) {
     console.log(error);
   }
+  console.log('doneee')
+  await shutdown();
 };
 
 main();
