@@ -58,13 +58,6 @@ export class TokenContract extends SmartContract {
 
     let newTotalAmountInCirculation = totalAmountInCirculation.add(amount);
 
-    // adminSignature
-    //   .verify(
-    //     this.address,
-    //     amount.toFields().concat(receiverAddress.toFields())
-    //   )
-    //   .assertTrue();
-
     this.token.mint({
       address: receiverAddress,
       amount,
