@@ -1,14 +1,4 @@
-/**
- * This file specifies how to run the `MinadoTestApp` smart contract locally using the `Mina.LocalBlockchain()` method.
- * The `Mina.LocalBlockchain()` method specifies a ledger of accounts and contains logic for updating the ledger.
- *
- * Please note that this deployment is local and does not deploy to a live network.
- * If you wish to deploy to a live network, please use the zkapp-cli to deploy.
- *
- * To run locally:
- * Build the project: `$ npm run build`
- * Run with node:     `$ node build/src/run.js`.
- */
+
 import { test } from './MinadoTestApp.js';
 import {
   AccountUpdate,
@@ -21,9 +11,7 @@ import {
   Poseidon,
   UInt64,
   Signature,
-  Circuit,
 } from 'snarkyjs';
-import { second } from './second.js';
 import { TokenContract } from './mint.js';
 // export {init}
 const berkley = true;
@@ -45,7 +33,6 @@ type Deposit = {
 
 let instance;
 if (berkley) {
-  // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
   instance = Mina.Network({
     mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
     archive: 'https://archive.berkeley.minaexplorer.com/',
@@ -97,12 +84,18 @@ type Note = {
   nullifier: Field;
   secret: Field;
 };
+/**
+ * Generates a note that the user will save
+ * @param note Note that the user will store
+ * @returns Note 
+ */
 function generateNoteString(note: Note): string {
   return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
 }
+/**
+ * Emits deposit action 
+ */
 async function emitDepositAction() {
-  //Geting the value of depositId befote
-  let prevDepositId = await zkAppTest.depositId.fetch();
   /**
    * Emiting an action to update the depositId
    */
@@ -115,12 +108,6 @@ async function emitDepositAction() {
   await actionTx.prove();
   await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
   console.log('Id of deposit updated and transaction send');
-  /**
-   * Fetching the actions
-   */
-  let currentDepositId = await zkAppTest.depositId.fetch();
-  console.log('CURRENT DEPOSIT ID');
-  console.log(currentDepositId);
 }
 
 /**
@@ -134,7 +121,6 @@ async function createNullifier(userPk: PublicKey) {
     secret = Field.random();
   }
   let nullifierHash = Poseidon.hash([...keyString, secret]);
-  // let txHash= await eventsTx.transaction.memo.toString()
   console.log(`Nullifier event transaction emmited `);
   return nullifierHash;
 }
@@ -150,7 +136,6 @@ async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
   );
   await eventsTx.prove();
   await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-  // let txHash= await eventsTx.transaction.memo.toString()
   console.log(`Deposit event emmited `);
 }
 /**
@@ -160,16 +145,9 @@ function createCommitment(nullifier: Field, secret: Field) {
   console.log('Commitment created');
   return Poseidon.hash([nullifier, secret]);
 }
-async function fetchEvents() {
-  /**
-   * Fetching the events
-   */
-  let rawevents = await zkAppTest.fetchEvents();
-  console.log('THESE ARE THE EVENTS');
-  console.log(rawevents);
-}
 /**
- * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+/**
+ * After the commitment is emitted in an event and the note is returned, the money should be send to the zkApp account
  * @param sender
  * @param amount
  */
@@ -195,7 +173,7 @@ async function sendFundstoMixer(
  */
 let secondPublicKey = PublicKey.fromBase58(zkAppSmartContractSecondAddress!);
 await fetchAccount({ publicKey: secondPublicKey });
-export async function mintToken(
+async function mintToken(
   recieverAddress: PublicKey,
   signerPk: Signature
 ) {
@@ -209,7 +187,7 @@ export async function mintToken(
   await mint_txn.prove();
   mint_txn.sign([minadoPrivK]);
   await mint_txn.send();
-  console.log(`Token mintented to ${recieverAddress}`);
+  console.log(`Token mintented to ${recieverAddress.toBase58()}`);
 }
 /**
  * Standard fetch account
@@ -259,7 +237,6 @@ async function deposit(
   );
   //Minting a token as a reward to the user
   await mintToken(sender, mintSignature);
-  await fetchEvents();
   return noteString;
 }
 //-----------------------------------------
@@ -274,7 +251,6 @@ function parseNoteString(noteString: string): Note {
   if (!match) {
     throw new Error('The note has invalid format');
   }
-
   return {
     currency: match.groups?.currency as string,
     amount: new UInt64(Number(match.groups?.amount)),
@@ -282,6 +258,12 @@ function parseNoteString(noteString: string): Note {
     secret: new Field(match.groups?.secret as string),
   };
 }
+/**
+ * Creates a deposit object 
+ * @param nullifier 
+ * @param secret 
+ * @returns 
+ */
 function createDeposit(nullifier: Field, secret: Field): Deposit {
   let deposit = {
     nullifier,
@@ -294,16 +276,10 @@ function createDeposit(nullifier: Field, secret: Field): Deposit {
 /**
  *
  * @param deposit Created from a note
- * Should return a Merkle Proof that will be validated by the smart contract
+ * Should retunr true or false dif the note is valid or invalid. 
  */
 async function validateProof(deposit: Deposit) {
-  /**
-   * Merkle Tree Validation.
-   */
-  //Find the commitment in the events
-
   let depositEvents = await getDepositEvents();
-
   //
   let commitmentDeposit = deposit.commitment;
   //Search for an event with a given commitment
@@ -326,6 +302,10 @@ async function getDepositEvents() {
   console.log('Deposit Events => ', depositEvents);
   return depositEvents;
 }
+/**
+ * eEmits nullifier event
+ * @param nullifierHash 
+ */
 async function emitNullifierEvent(nullifierHash: Field) {
   //Transaction
   let eventsTx = await Mina.transaction(
@@ -338,7 +318,7 @@ async function emitNullifierEvent(nullifierHash: Field) {
   await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
 }
 /**
- * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+ * After everything is check the money should be send to the  user.
  * @param sender
  * @param amount
  */
@@ -350,16 +330,18 @@ async function withdrawFunds(
 ) {
   let tx = await Mina.transaction({ sender: sender, fee: defaultFee2 }, () => {
     let update = AccountUpdate.createSigned(sender);
-    //The userAddress is funced
-    let contractAddress = PublicKey.fromBase58(zkAppSmartContractTestAddress!);
     update.send({ to: reciever, amount: amount });
-    console.log('Sendind Funds to Minado');
-    //Parece que la zkapp no puede recibir fondos
+    console.log('Sendind Funds to User');
   });
   await tx.prove();
   await tx.sign([zkAppTestKey, senderPrivKey]).send();
-  console.log('Funds sent to minado');
+  console.log('Funds sent to User');
 }
+//TODO: CHANGE FOR LOOP LOGIC 
+/**
+ * 
+ * @returns Gets all the nullifier events 
+ */
 async function getNullifierEvents() {
   let rawEvents = await zkAppTest.fetchEvents();
   console.log('Events coming => ', rawEvents);
@@ -377,10 +359,8 @@ async function getNullifierEvents() {
   }
   console.log('Nullifier Events');
   console.log(nullifierEvents);
-  // return rawEvents.filter((a) => (a.type = `nullifier` && ));
   return nullifierEvents;
 }
-//TODO: FINISH THIS FUNCTION
 async function isSpend(nullifier: any) {
   let nullfierEvents = await getNullifierEvents();
   // return rawEvents.filter((a) => (a.type = `nullifier` && ));
@@ -408,7 +388,6 @@ async function withdraw(noteString: string, userAddress: PublicKey) {
     await validateProof(deposit);
     let amount = parsedNote.amount.value;
     //Verify that that an hour already passed after deposiTt
-
     let contractPK = PublicKey.fromBase58(zkAppSmartContractTestAddress);
     await isSpend(parsedNote.nullifier);
     await withdrawFunds(minadoPrivK, amount, contractPK, userAddress);
