@@ -16,16 +16,15 @@ import {
   Reducer,
   UInt64,
   Permissions,
-  Signature,
+  Signature
 } from 'snarkyjs';
 import { second } from './second.js';
 import DepositClass from './models/DepositClass.js';
-import { TokenContract } from './mint.js';
+import {TokenContract} from './mint.js'
 await isReady;
 
 let initialIndex: Field = new Field(0n);
-const mintAmount = UInt64.from(1);
-
+ const mintAmount = UInt64.from(1);
 //Initializing a Merkle Tree with height 3 for simplicity
 let minadoMerkleTree = new MerkleTree(3);
 
@@ -89,17 +88,21 @@ export class test extends SmartContract {
     this.reducer.dispatch(increment);
     // return newDepositId;
   }
+  @method manageDeposit(userPublicKey: PublicKey, address: PublicKey) {
+    //Publick Key of the Ssecond Smart contract
+    let opsContract = new second(address);
+    // console.log(opsContract)
+    let nullifierHash = opsContract.createNullifier(userPublicKey);
+    return nullifierHash;
+  }
   //TODO: CHANGE SIGNATURE TYPE
-  @method mintMinadoToken(
-    tokenAddress: PublicKey,
-    recieverAddress: PublicKey,
-    signature: Signature
-  ) {
-    try {
-      const mintContract = new TokenContract(tokenAddress);
-      mintContract.mint(recieverAddress, mintAmount, signature);
-    } catch (err) {
-      console.log(err);
+  @method mintMinadoToken(tokenAddress:PublicKey,recieverAddress:PublicKey,signature:Signature){
+    try{
+      const mintContract = new TokenContract(tokenAddress)
+      mintContract.mint(recieverAddress,mintAmount,signature)
+    }
+    catch(err){
+      console.log(err)
     }
   }
   @method emitNullifierEvent(nullifierHash: Field, sender: PublicKey) {
@@ -107,8 +110,8 @@ export class test extends SmartContract {
     // this.account.provedState.assertEquals(this.account.provedState.get());
     // this.account.isNew.assertEquals(this.account.isNew.get())
     // this.account.isNew.get().assertFalse
-    //TODO:THIS FAILS
-
+    //TODO:THIS FAILS 
+    
     // this.account.provedState.assertEquals(this.account.provedState.get());
     // this.account.provedState.get().assertFalse();
     // this.account.balance.assertBetween(UInt64.fromFields([Field(1)]),UInt64.fromFields([Field(50)]))
@@ -122,11 +125,6 @@ export class test extends SmartContract {
     //   console.log(err);
     // }
     this.emitEvent('nullifier', nullifierHash);
-  }
-  @method verifyWithdrawTime() {
-    //Network precondition
-    const now = this.network.timestamp.get();
-    this.network.timestamp.assertBetween(now, now.add(60 * 60 * 1000));
   }
   @method emitDepositEvent(commitment: Field, timeStamp: UInt64) {
     let deposit = {

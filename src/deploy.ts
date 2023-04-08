@@ -40,14 +40,14 @@ async function deploy(berkley: boolean) {
 
   // create an instance of the smart contract
   //TODO:CHANGE THIS WITH THE CONTRACT YOU NEED TO DEPLOY
-  const zkAppTest = new test(zkAppAddress);
+  const zkAppTest = new TokenContract(zkAppAddress);
   //   const zkAppSecond = new second(zkAppSecondAddress);
 
   console.log('Deploying and initializing Minado Test App...');
 
   //Setup
   //TODO:Also change when deploying
-  let { verificationKey } = await test.compile();
+  let { verificationKey } = await TokenContract.compile();
   let defaultFee = 300_000_000;
 
   // //Deployment logic
