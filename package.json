@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "dotenv": "^16.0.3",
-    "snarkyjs": "^0.9.3",
+    "snarkyjs": "^0.9.6",
     "zkapp-cli": "^0.7.4"
   }
 }

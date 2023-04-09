@@ -5,32 +5,30 @@ import {
   shutdown,
   Poseidon,
   Field,
-  MerkleTree,
-  MerkleWitness,
   UInt64,
   UInt32,
-  Int64,
   Mina,
   PublicKey,
-  fetchAccount,
-  AccountUpdate,
   PrivateKey,
+  fetchAccount,
   Signature,
-  fetchEvents,
 } from 'snarkyjs';
 import { test } from './MinadoTestApp.js';
-import { getAccount, getBalance } from 'snarkyjs/dist/node/lib/mina';
 import { TokenContract } from './mint.js';
 import DepositClass from './models/DepositClass.js';
+import { Program, ProgramInput } from './zkProgram.js';
+await isReady;
 ///Setup
 const zkAppSmartContractTestAddress =
-  'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
+  'B62qkg13dU8dNZ46nMEz23mKJGqFNXKPXsYRKihY1PRFnLbp7dVtN5P';
 const tokenContractAddress =
-  'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
+  'B62qnkitN4PSEAnta5YFaBzUEFAtiXSBNCTLBWo1FnxGWnAFaqgLLBY';
+
 //Variables
 let publicKeyTokenContract: PublicKey;
 let zkTokenContract: TokenContract;
 let zkAppTest: test;
+
 /**
  * Types
  */
@@ -60,18 +58,15 @@ describe('Minado E2E tests', () => {
   let minadoPk: any;
   let minadoPrivK: PrivateKey;
   let instance: any;
+  let verificationKey: string;
   let defaultFee = 100_000_000;
   let defaultFee2 = 200_000_000;
 
   beforeAll(async () => {
-    await isReady;
-    // contracts compilation
-
     const isBerkeley = process.env.TEST_NETWORK === 'true';
 
     // Mina Blockchain instance : local | berkeley
     if (isBerkeley) {
-      // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
       Blockchain = Mina.Network({
         mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
         archive: 'https://archive.berkeley.minaexplorer.com/',
@@ -90,6 +85,10 @@ describe('Minado E2E tests', () => {
       minadoPk = minadoPrivK.toPublicKey();
       Mina.setActiveInstance(instance);
     }
+    // compile zk program
+    const { verificationKey: key } = await Program.compile();
+    verificationKey = key;
+    // compile contracts
     await test.compile();
     await TokenContract.compile();
   });
@@ -98,16 +97,30 @@ describe('Minado E2E tests', () => {
     setInterval(shutdown, 0);
   });
 
-  // test functions-----------------------
+  // test methods -----------------------
+  /**
+   * Check if an specific event with a type is inside a function
+   * @param events
+   * @param type
+   * @returns True if exists, false if not
+   */
   function isEventinArray(events: Array<any>, type: string) {
     let filteredEvents = events.filter((a) => a.type === type);
-    console.log('Filtered events');
-    console.log(filteredEvents);
     return filteredEvents.length ? true : false;
   }
+  /**
+   * Generates note that will be stored by the use
+   * @param note
+   * @returns Note
+   */
   function generateNoteString(note: Note): string {
     return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
   }
+  /**
+   * Creates Nullifier to avoid double spending
+   * @param publicKey
+   * @returns
+   */
   function createNullifier(publicKey: PublicKey) {
     let keyString = publicKey.toFields();
     let secret = Field.random();
@@ -120,7 +133,11 @@ describe('Minado E2E tests', () => {
   function createCommitment(nullifier: Field, secret: Field) {
     return Poseidon.hash([nullifier, secret]);
   }
-
+  /**
+   * Mints token as a reward after deposit
+   * @param recieverAddress
+   * @param signerPk
+   */
   async function mintToken(recieverAddress: PublicKey, signerPk: Signature) {
     try {
       const mint_txn = await Mina.transaction(
@@ -154,10 +171,10 @@ describe('Minado E2E tests', () => {
     }
 
     return {
-      currency: match.groups?.currency!,
+      currency: match.groups?.currency as string,
       amount: new UInt64(Number(match.groups?.amount)),
-      nullifier: new Field(match.groups?.nullifier!),
-      secret: new Field(match.groups?.secret!),
+      nullifier: new Field(match.groups?.nullifier as string),
+      secret: new Field(match.groups?.secret as string),
     };
   }
   function createDeposit(nullifier: Field, secret: Field): Deposit {
@@ -186,46 +203,48 @@ describe('Minado E2E tests', () => {
     console.log('Deposit Events => ', rawEvents);
     return filteredEvents;
   }
-/**
- * Function to normalize deposit events 
- */
-function normalizeEvents (filteredEvents:Array<any>){
-  let eventsNormalizedArray:any=[]
-  for (let i = 0; i < filteredEvents.length; i++) {
-    let element = filteredEvents[i];
+  /**
+   * Function to normalize deposit events
+   */
+  function normalizeEvents(filteredEvents: Array<any>) {
+    let eventsNormalizedArray: any = [];
+    for (let i = 0; i < filteredEvents.length; i++) {
+      let element = filteredEvents[i];
       let eventsNormalized = element.event.toFields(null);
-      let object:any = {
+      let object: any = {
         commitment: eventsNormalized[0].toString(),
         timeStamp: eventsNormalized[1]?.toString(),
       };
       eventsNormalizedArray.push(object);
+    }
+    return eventsNormalizedArray;
   }
-  return eventsNormalizedArray
-}
-/**
- *Validates the deposit object and that it corresponds to a valid object
- * @param deposit Created from a note
- *
- */
-async function validateProof(deposit: Deposit) {
   /**
-   * Merkle Tree Validation.
+   *Validates the deposit object and that it corresponds to a valid object
+   * @param deposit Created from a note
+   *
    */
-  //Find the commitment in the events
+  async function validateProof(deposit: Deposit) {
+    /**
+     * Merkle Tree Validation.
+     */
+    //Find the commitment in the events
 
-  let depositEvents = await getDepositEvents();
-  let normalizedEvents =normalizeEvents(depositEvents)
-  //
-  let commitmentDeposit = deposit.commitment;
-  console.log('Commitment',)
-  console.log(commitmentDeposit,toString())
-  //Search for an event with a given commitment
-  let filteredEvents = normalizedEvents.filter((a:any) => a.commitment!.toString() === commitmentDeposit.toString());
-  let condition = filteredEvents.length ? true :false
-  if (!condition) {
-    throw new Error('The deposit event is corrupt please input a valid note');
+    let depositEvents = await getDepositEvents();
+    let normalizedEvents = normalizeEvents(depositEvents);
+    //
+    let commitmentDeposit = deposit.commitment;
+    console.log('Commitment');
+    console.log(commitmentDeposit, toString());
+    //Search for an event with a given commitment
+    let filteredEvents = normalizedEvents.filter(
+      (a: any) => a.commitment!.toString() === commitmentDeposit.toString()
+    );
+    let condition = filteredEvents.length ? true : false;
+    if (!condition) {
+      throw new Error('The deposit event is corrupt please input a valid note');
+    }
   }
-}
 
   // ------------------------------------
 
@@ -233,29 +252,28 @@ async function validateProof(deposit: Deposit) {
    * DEPOSIT LOGIC TESTS
    */
 
-  // it('Test for emitNullifier event method and the emit deposit event  ', async () => {
-  //   /**
-  //    * Fetching the events
-  //    */
-  //   try {
-  //     // create an instance of the smart contract]\
-  //     // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-  //     let zkAppTest = new test(
-  //       PublicKey.fromBase58(zkAppSmartContractTestAddress)
-  //     );
-  //     // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
-  //     let events = await zkAppTest.fetchEvents();
-  //     console.log('EVENTS');
-  //     console.log(events);
-  //     let depositEvents = await isEventinArray(events, 'deposit');
-  //     let nullifierEevents = await isEventinArray(events, 'nullifier')
-  //     expect(depositEvents).toBe(true);
-  //     expect(nullifierEevents).toBe(true);
-  //   } catch (error: any) {
-  //     console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
-  //     throw error;
-  //   }
-  // });
+  it('Test for emitNullifier event method and the emit deposit event  ', async () => {
+    console.time('emitNullifierAndEventDepositTest');
+    try {
+      let zkAppTest = new test(
+        PublicKey.fromBase58(zkAppSmartContractTestAddress)
+      );
+      // let events =await fetchEvents({publicKey:zkAppSmartContractTestAddress})
+      let events = await zkAppTest.fetchEvents();
+      console.log('EVENTS');
+      console.log(events);
+      // we need to emit the events first
+      let depositEvents = await isEventinArray(events, 'deposit');
+      let nullifierEevents = await isEventinArray(events, 'nullifier');
+      expect(depositEvents).toBe(true);
+      expect(nullifierEevents).toBe(true);
+      console.timeEnd('emitNullifierAndEventDepositTest');
+    } catch (error: any) {
+      console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+      console.timeEnd('emitNullifierAndEventDepositTest');
+      throw error;
+    }
+  });
 
   // it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
   //   let amount = 20;
@@ -275,62 +293,44 @@ async function validateProof(deposit: Deposit) {
   //   expect(noteString).toMatch(noteRegex);
   // });
 
-  // it('With a given nullifier and secret it generates a commitment that is the poseidon hash of these two values', async () => {
-  //   const nullifier = createNullifier(minadoPk);
-  //   const secret = Field.random();
-  //   const commitment = createCommitment(nullifier, secret);
-
-  //   const expectedCommitment = Poseidon.hash([nullifier, secret]);
-
-  //   expect( commitment ).toEqual( expectedCommitment );
-  // });
-
-  //This fucntion tests the mint token method
-  // it(
-  //   'Mint token method test, it should succesfully mint a token',
-  //   async () => {
-  //     try {
-  //       // await initTok  `enInstance();
-  //       const mintAmount = UInt64.from(1);
-  //       const mintSignature = Signature.create(
-  //         minadoPrivK,
-  //         mintAmount.toFields().concat(publicKeyTokenContract.toFields())
-  //       );
-  //       //await mintToken(minadoPk, mintSignature);
-  //       await fetchAccount({
-  //         publicKey: 'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN',
-  //       });
-  //       await mintToken(minadoPk, mintSignature);
-  //       //let totalAmountInCirculation = this.totalAmountInCirculation.get();
-  //       let totalAmountInCirculation =
-  //         zkTokenContract.totalAmountInCirculation.get();
-  //       zkTokenContract.totalAmountInCirculation.assertEquals(
-  //         totalAmountInCirculation
-  //       );
-  //       console.log('TOKENS TOTAL', totalAmountInCirculation.toString());
-  //     } catch (error: any) {
-  //       console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
-  //       throw error;
-  //     }
-  //   },
-  //   5 * 60 * 1000
-  // );
-
-  //This test needs to validate that the deposit events that are being created in the Zkapp live on-chain
-  // it(`Events tests`, async () => {
-  //   //This should be the smart contract address
-  //   let address = PublicKey.fromBase58(
-  //     'B62qnPGoYZdQcjjDhadZrM1SUL1EjCxoEXaby7hmkqkeNrpwpWsBo1E'
-  //   );
-  //   // let balance = Mina.getBalance(address).toString();
-  //   let zkapp = await fetchAccount({ publicKey: address });
-  //   // let rawEvents = await zkapp.account.fetchEvents();
-  //   // let despositEvents = (await rawEvents).filter((a) => (a.type = `deposit`));
-  //   // use the balance of this account
-  //   // let balance = account.account?.balance.toString();
-  //   let expectedBalance = '49000000000';
-  //   expect(balance).toEqual(expectedBalance);
-  // });
+  it('With a given nullifier and secret it generates a commitment that is the poseidon hash of these two values', async () => {
+    console.time('createCommitmentTest');
+    const nullifier = createNullifier(minadoPk);
+    const secret = Field.random();
+    const commitment = createCommitment(nullifier, secret);
+    const expectedCommitment = Poseidon.hash([nullifier, secret]);
+    expect(commitment).toEqual(expectedCommitment);
+    console.timeEnd('createCommitmentTest');
+  });
+  it(
+    'Mint token method test, it should succesfully mint a token',
+    async () => {
+      console.time('mintTokenTest');
+      try {
+        // await initTok  `enInstance();
+        const mintAmount = UInt64.from(1);
+        const mintSignature = Signature.create(
+          minadoPrivK,
+          mintAmount.toFields().concat(publicKeyTokenContract.toFields())
+        );
+        await fetchAccount({
+          publicKey: 'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN',
+        });
+        await mintToken(minadoPk, mintSignature);
+        let totalAmountInCirculation =
+          zkTokenContract.totalAmountInCirculation.get();
+        zkTokenContract.totalAmountInCirculation.assertEquals(
+          totalAmountInCirculation
+        );
+        console.timeEnd('mintTokenTest');
+      } catch (error: any) {
+        console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+        console.timeEnd('mintTokenTest');
+        throw error;
+      }
+    },
+    5 * 60 * 1000
+  );
 
   /**
    * Withdraw tests
@@ -365,14 +365,15 @@ async function validateProof(deposit: Deposit) {
   // });
 
   it('Test for validating that a deposit exists in the events and it is correct ', async () => {
+    console.time('validatingDepositExistTest');
     let nullifier = Field(
-      '20481161536473958338062251681005312196388986171849505536516038384954578696435'
+      '11585209139878798932357986174060311467267135906027654678156605460441251706059'
     );
     let secret = Field(
-      '7739732923483565316274813249062541533045865377527507613295621942574965509753'
+      '5998354546491085671758129686091866500834021114313521641566938626173650038487'
     );
     let corruptedSecret = Field(
-      '7739732923483565316274813249062541533045865377527507613295621942574965589753'
+      '5998354546491085671758129686091866500834021114313521641566938626173650038487'
     );
     let depositExample = {
       nullifier,
@@ -384,7 +385,8 @@ async function validateProof(deposit: Deposit) {
       secret: corruptedSecret,
       commitment: createCommitment(nullifier, secret),
     };
-    console.log('commitment',depositExample.commitment.toString())
+    console.log('commitment', depositExample.commitment.toString());
+    console.timeEnd('validatingDepositExistTest');
     // await validateProof(depositExample);
     // const error = new Error(
     //   'The deposit event is corrupt please input a valid note'
@@ -394,5 +396,38 @@ async function validateProof(deposit: Deposit) {
     // };
     // expect(errorFunction).toThrow(error);
   });
-  //TODO: ADD Is spent test 
+
+  it(
+    'Claim tokens and update rewards',
+    async () => {
+      console.time('claimTokensTest');
+      try {
+        const programInput = new ProgramInput({
+          permissionUntilBlockHeight: UInt32.from(10_000),
+          publicKey: minadoPk,
+          signature: Signature.create(minadoPrivK, Field(0).toFields()),
+        });
+        console.log('Creating proof...');
+        const proof = await Program.run(programInput);
+        console.log('Proof created');
+        const newRewardPerBlock = UInt64.from(100);
+        const tx = await Mina.transaction(
+          { sender: minadoPk, fee: 1e9 },
+          () => {
+            zkAppTest.updateRewardsPerBlock(proof, newRewardPerBlock);
+            zkAppTest.approveAccountUpdate(zkAppTest.self);
+          }
+        );
+        await tx.prove();
+        await tx.sign([minadoPrivK]).send();
+        console.log('Minedo.updateRewardsPerBlock() successful', tx.toPretty());
+        console.timeEnd('claimTokensTest');
+      } catch (error: any) {
+        console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
+        console.timeEnd('claimTokensTest');
+        throw error;
+      }
+    },
+    5 * 60 * 1000
+  );
 });

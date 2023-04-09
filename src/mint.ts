@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import {
   SmartContract,
   state,
@@ -16,7 +18,10 @@ await isReady;
 
 export class TokenContract extends SmartContract {
   @state(UInt64) totalAmountInCirculation = State<UInt64>();
-
+  /**
+   * Deploy function
+   * @param args  verification key
+   */
   deploy(args: DeployArgs) {
     super.deploy(args);
 
@@ -30,12 +35,20 @@ export class TokenContract extends SmartContract {
       receive: permissionToEdit,
     });
   }
-
+  /**
+   * init function, it gets the tokenSymbol and set the ammount in circulation in zero
+   */
   @method init() {
     super.init();
     this.account.tokenSymbol.set(tokenSymbol);
     this.totalAmountInCirculation.set(UInt64.zero);
   }
+  /**
+   * Mint token function
+   * @param receiverAddress
+   * @param amount
+   * @param adminSignature
+   */
 
   @method mint(
     receiverAddress: PublicKey,
@@ -47,13 +60,6 @@ export class TokenContract extends SmartContract {
 
     let newTotalAmountInCirculation = totalAmountInCirculation.add(amount);
 
-    // adminSignature
-    //   .verify(
-    //     this.address,
-    //     amount.toFields().concat(receiverAddress.toFields())
-    //   )
-    //   .assertTrue();
-
     this.token.mint({
       address: receiverAddress,
       amount,
@@ -61,7 +67,12 @@ export class TokenContract extends SmartContract {
 
     this.totalAmountInCirculation.set(newTotalAmountInCirculation);
   }
-
+  /**
+   * Send tokens from one account to another
+   * @param senderAddress
+   * @param receiverAddress
+   * @param amount
+   */
   @method sendTokens(
     senderAddress: PublicKey,
     receiverAddress: PublicKey,
@@ -73,7 +84,11 @@ export class TokenContract extends SmartContract {
       amount,
     });
   }
-
+  /**
+   * Burns tokens
+   * @param addressToDecrease
+   * @param amount
+   */
   @method burn(addressToDecrease: PublicKey, amount: UInt64) {
     this.token.tokenOwner.x;
     this.token.burn({

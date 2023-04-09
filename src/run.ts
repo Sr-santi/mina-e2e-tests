@@ -1,14 +1,3 @@
-/**
- * This file specifies how to run the `MinadoTestApp` smart contract locally using the `Mina.LocalBlockchain()` method.
- * The `Mina.LocalBlockchain()` method specifies a ledger of accounts and contains logic for updating the ledger.
- *
- * Please note that this deployment is local and does not deploy to a live network.
- * If you wish to deploy to a live network, please use the zkapp-cli to deploy.
- *
- * To run locally:
- * Build the project: `$ npm run build`
- * Run with node:     `$ node build/src/run.js`.
- */
 import { test } from './MinadoTestApp.js';
 import {
   AccountUpdate,
@@ -21,16 +10,14 @@ import {
   Poseidon,
   UInt64,
   Signature,
-  Circuit,
 } from 'snarkyjs';
-import { second } from './second.js';
 import { TokenContract } from './mint.js';
+import { Program } from './zkProgram.js';
 // export {init}
-const berkley = true;
 const zkAppSmartContractTestAddress =
-  'B62qoNr42ZhSbNeKu7b9eSLykQ8rxcPEQNPy8uXc4HKX4JFQNF9prwD';
-const zkAppSmartContractSecondAddress =
-  'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN';
+  'B62qkg13dU8dNZ46nMEz23mKJGqFNXKPXsYRKihY1PRFnLbp7dVtN5P';
+const tokenContractAddress =
+  'B62qnkitN4PSEAnta5YFaBzUEFAtiXSBNCTLBWo1FnxGWnAFaqgLLBY';
 
 let minadoPk: PublicKey;
 let minadoPrivK: PrivateKey;
@@ -42,10 +29,10 @@ type Deposit = {
   secret: Field;
   commitment: Field;
 };
+const isBerkeley = process.env.TEST_NETWORK === 'true';
 
 let instance;
-if (berkley) {
-  // instance = Mina.Network('https://proxy.berkeley.minaexplorer.com/graphql');
+if (isBerkeley) {
   instance = Mina.Network({
     mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
     archive: 'https://archive.berkeley.minaexplorer.com/',
@@ -69,18 +56,18 @@ if (berkley) {
  * ZK APPs setup
  */
 const zkAppTestKey = PrivateKey.random();
-const zkAppAddress = zkAppTestKey.toPublicKey();
 
-const zkAppSecondKey = PrivateKey.random();
 const zkAppSecondAddress = zkAppTestKey.toPublicKey();
 
 // create an instance of the smart contract
 const zkAppTest = new test(
   PublicKey.fromBase58(zkAppSmartContractTestAddress!)
 );
-const zkAppTwo = new TokenContract(
-  PublicKey.fromBase58(zkAppSmartContractSecondAddress!)
+const zkTokenContract = new TokenContract(
+  PublicKey.fromBase58(tokenContractAddress)
 );
+await Program.compile();
+console.log('Compiling zkAppTest');
 let { verificationKey } = await test.compile();
 await TokenContract.compile();
 //Setup
@@ -97,12 +84,18 @@ type Note = {
   nullifier: Field;
   secret: Field;
 };
+/**
+ * Generates a note that the user will save
+ * @param note Note that the user will store
+ * @returns Note
+ */
 function generateNoteString(note: Note): string {
   return `Minado&${note.currency}&${note.amount}&${note.nullifier}%${note.secret}&Minado`;
 }
+/**
+ * Emits deposit action
+ */
 async function emitDepositAction() {
-  //Geting the value of depositId befote
-  let prevDepositId = await zkAppTest.depositId.fetch();
   /**
    * Emiting an action to update the depositId
    */
@@ -115,12 +108,6 @@ async function emitDepositAction() {
   await actionTx.prove();
   await actionTx.sign([zkAppTestKey, minadoPrivK]).send;
   console.log('Id of deposit updated and transaction send');
-  /**
-   * Fetching the actions
-   */
-  let currentDepositId = await zkAppTest.depositId.fetch();
-  console.log('CURRENT DEPOSIT ID');
-  console.log(currentDepositId);
 }
 
 /**
@@ -134,7 +121,6 @@ async function createNullifier(userPk: PublicKey) {
     secret = Field.random();
   }
   let nullifierHash = Poseidon.hash([...keyString, secret]);
-  // let txHash= await eventsTx.transaction.memo.toString()
   console.log(`Nullifier event transaction emmited `);
   return nullifierHash;
 }
@@ -150,7 +136,6 @@ async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
   );
   await eventsTx.prove();
   await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
-  // let txHash= await eventsTx.transaction.memo.toString()
   console.log(`Deposit event emmited `);
 }
 /**
@@ -160,16 +145,9 @@ function createCommitment(nullifier: Field, secret: Field) {
   console.log('Commitment created');
   return Poseidon.hash([nullifier, secret]);
 }
-async function fetchEvents() {
-  /**
-   * Fetching the events
-   */
-  let rawevents = await zkAppTest.fetchEvents();
-  console.log('THESE ARE THE EVENTS');
-  console.log(rawevents);
-}
 /**
- * After the commitment is added into the merkle Tree and the note is returned, the money should be send to the zkApp account
+/**
+ * After the commitment is emitted in an event and the note is returned, the money should be send to the zkApp account
  * @param sender
  * @param amount
  */
@@ -193,7 +171,7 @@ async function sendFundstoMixer(
 /**
  * Mint token Function
  */
-let secondPublicKey = PublicKey.fromBase58(zkAppSmartContractSecondAddress!);
+let secondPublicKey = PublicKey.fromBase58(tokenContractAddress);
 await fetchAccount({ publicKey: secondPublicKey });
 export async function mintToken(
   recieverAddress: PublicKey,
@@ -209,15 +187,9 @@ export async function mintToken(
   await mint_txn.prove();
   mint_txn.sign([minadoPrivK]);
   await mint_txn.send();
-  console.log(`Token mintented to ${recieverAddress}`);
+  console.log(`Token mintented to ${recieverAddress.toBase58()}`);
 }
-/**
- * Standard fetch account
- */
 
-let accountZk = await fetchAccount({
-  publicKey: zkAppSmartContractTestAddress!,
-});
 /**
  * Deposit function
  * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
@@ -230,12 +202,14 @@ async function deposit(
   sender: PublicKey
 ) {
   //  Creating nullifier and nullifieremmiting event
+  console.log("Feching account's zkAppTest");
   await fetchAccount({ publicKey: zkAppSmartContractTestAddress });
   let nullifierHash = await createNullifier(minadoPk);
+  console.log('NullifierHash', nullifierHash.toString());
   //Creatting deposit commitment
   let secret = Field.random();
   let commitment = await createCommitment(nullifierHash, secret);
-  console.log('commitment',commitment.toString())
+  console.log('commitment', commitment.toString());
   await sendFundstoMixer(userAccount, ammount, sender);
   //A note is created and send in a deposit event
   const note = {
@@ -260,7 +234,6 @@ async function deposit(
   );
   //Minting a token as a reward to the user
   await mintToken(sender, mintSignature);
-  await fetchEvents();
   return noteString;
 }
 //-----------------------------------------
@@ -268,27 +241,22 @@ async function deposit(
  * WITHDRAW LOGIC FUNCTIONS
  */
 //-----------------------------------------
-/**
- * Fucntion that parses a note
- * @param noteString Hold by the user
- * @returns
- */
+
 function parseNoteString(noteString: string): Note {
   const noteRegex =
     /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
   const match = noteRegex.exec(noteString);
-
   if (!match) {
     throw new Error('The note has invalid format');
   }
-
   return {
-    currency: match.groups?.currency!,
+    currency: match.groups?.currency as string,
     amount: new UInt64(Number(match.groups?.amount)),
-    nullifier: new Field(match.groups?.nullifier!),
-    secret: new Field(match.groups?.secret!),
+    nullifier: new Field(match.groups?.nullifier as string),
+    secret: new Field(match.groups?.secret as string),
   };
 }
+
 /**
  * Creates a deposit object to get a commitment from using a nullifier and a secret
  * @param nullifier Comes from the parsed note
@@ -301,25 +269,26 @@ function createDeposit(nullifier: Field, secret: Field): Deposit {
     secret,
     commitment: createCommitment(nullifier, secret),
   };
-
   return deposit;
 }
+
 /**
- * Function to normalize deposit events 
+ * Function to normalize deposit events
  */
-function normalizeEvents (filteredEvents:Array<any>){
-  let eventsNormalizedArray:any=[]
+function normalizeEvents(filteredEvents: Array<any>) {
+  let eventsNormalizedArray: any = [];
   for (let i = 0; i < filteredEvents.length; i++) {
     let element = filteredEvents[i];
-      let eventsNormalized = element.event.toFields(null);
-      let object:any = {
-        commitment: eventsNormalized[0].toString(),
-        timeStamp: eventsNormalized[1]?.toString(),
-      };
-      eventsNormalizedArray.push(object);
+    let eventsNormalized = element.event.toFields(null);
+    let object: any = {
+      commitment: eventsNormalized[0].toString(),
+      timeStamp: eventsNormalized[1]?.toString(),
+    };
+    eventsNormalizedArray.push(object);
   }
-  return eventsNormalizedArray
+  return eventsNormalizedArray;
 }
+
 /**
  *Validates the deposit object and that it corresponds to a valid object
  * @param deposit Created from a note
@@ -332,16 +301,19 @@ async function validateProof(deposit: Deposit) {
   //Find the commitment in the events
 
   let depositEvents = await getDepositEvents();
-  let normalizedEvents =normalizeEvents(depositEvents)
+  let normalizedEvents = normalizeEvents(depositEvents);
   //
   let commitmentDeposit = deposit.commitment;
   //Search for an event with a given commitment
-  let filteredEvents = normalizedEvents.filter((a:any) => a.commitment!.toString() === commitmentDeposit.toString());
-  let condition = filteredEvents.length ? true :false
+  let filteredEvents = normalizedEvents.filter(
+    (a: any) => a.commitment!.toString() === commitmentDeposit.toString()
+  );
+  let condition = filteredEvents.length ? true : false;
   if (!condition) {
     throw new Error('The deposit event is corrupt please input a valid note');
   }
 }
+
 /**
  * Get all the deposit events
  * @returns events of type deposit
@@ -352,6 +324,7 @@ async function getDepositEvents() {
   console.log('Deposit Events => ', rawEvents);
   return filteredEvents;
 }
+
 // test functions-----------------------
 function isEventinArray(events: Array<any>, type: string) {
   let filteredEvents = events.filter((a) => a.type === type);
@@ -359,6 +332,7 @@ function isEventinArray(events: Array<any>, type: string) {
   console.log(filteredEvents);
   return filteredEvents.length ? true : false;
 }
+
 /**
  * Emits a nullfier event after a withdraw tranaaction was succesful
  * @param nullifierHash
@@ -374,6 +348,7 @@ async function emitNullifierEvent(nullifierHash: Field) {
   await eventsTx.prove();
   await eventsTx.sign([zkAppTestKey, minadoPrivK]).send();
 }
+
 /**
  * After the nullifier and the deposit event is validated the money should be withdrawn
  * @param sender
@@ -387,16 +362,14 @@ async function withdrawFunds(
 ) {
   let tx = await Mina.transaction({ sender: sender, fee: defaultFee2 }, () => {
     let update = AccountUpdate.createSigned(sender);
-    //The userAddress is funced
-    let contractAddress = PublicKey.fromBase58(zkAppSmartContractTestAddress!);
     update.send({ to: reciever, amount: amount });
-    console.log('Sendind Funds to Minado');
-    //Parece que la zkapp no puede recibir fondos
+    console.log('Sendind Funds to User');
   });
   await tx.prove();
   await tx.sign([zkAppTestKey, senderPrivKey]).send();
-  console.log('Funds sent to minado');
+  console.log('Funds sent to User');
 }
+
 /**
  * Get nullifier events filtered by type
  * @returns Events with type nullifier
@@ -408,9 +381,9 @@ async function getNullifierEvents() {
   for (let i = 0; i < rawEvents.length; i++) {
     let element = rawEvents[i];
     if (element.type == 'nullifier') {
-      let eventsNormalized = element.event.toFields(null);
+      let eventsNormalized = element.event.data.toFields(null);
       let object = {
-        nullifier: eventsNormalized[0].toString(),
+        nullifier: eventsNormalized[0]?.toString(),
         timeStamp: eventsNormalized[1]?.toString(),
       };
       nullifierEvents.push(object);
@@ -421,15 +394,18 @@ async function getNullifierEvents() {
   // return rawEvents.filter((a) => (a.type = `nullifier` && ));
   return nullifierEvents;
 }
-//TODO: FINISH THIS FUNCTION
-async function isSpend(nullifier: any) {
+
+async function isSpend(nullifier: string) {
   let nullfierEvents = await getNullifierEvents();
-  // return rawEvents.filter((a) => (a.type = `nullifier` && ));
+
+  //return rawEvents.filter((a) => (a.type == `nullifier` ));
   let fitleredArray = nullfierEvents.filter((a) => a.nullifier == nullifier);
   if (fitleredArray.length > 0) {
     throw new Error('The note was already spent');
   }
+  return false;
 }
+
 /**
  *
  * Withdraw function
@@ -449,9 +425,8 @@ async function withdraw(noteString: string, userAddress: PublicKey) {
     await validateProof(deposit);
     let amount = parsedNote.amount.value;
     //Verify that that an hour already passed after deposiTt
-
     let contractPK = PublicKey.fromBase58(zkAppSmartContractTestAddress);
-    await isSpend(parsedNote.nullifier);
+    await isSpend(parsedNote.nullifier.toString());
     await withdrawFunds(minadoPrivK, amount, contractPK, userAddress);
     //Emiting the nullifier event after the withdraw is done
     await emitNullifierEvent(parsedNote.nullifier);
@@ -466,4 +441,3 @@ async function withdraw(noteString: string, userAddress: PublicKey) {
 
 await deposit(minadoPrivK, 1, minadoPk);
 await shutdown();
-// }
