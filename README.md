@@ -63,17 +63,18 @@ Read more here (https://github.com/Sr-santi/CLI-for-Private-Solutions-using-ZK-p
 ## Surface Areas and how they are being covered
 
 # 1. Recursion 
+We used recursion to verify a Signature in a SM method that we use  to validate that the rewards given after someone deposited were distributed correctly.  
     
 # 2. Call stack composability
-   We used Call-stack composability to mint a token from our Mint contract, we added a method to our main MinadoTestApp contract called mintMinadoToken() this method initializes the token contract and calls the mint fuction from it.
+We used Call-stack composability to mint a token from our Mint contract, we added a method to our main MinadoTestApp contract called mintMinadoToken() this method initializes the token contract and calls the mint fuction from it.
 # 3. Actions
-    We use actions to update the ID of deposit, as we track the IDs and number of deposits in our contract we needed a way to do it programmtically we use it in our updateIdOfDeposit method.
+We use actions to update the ID of deposit, as we track the IDs and number of deposits in our contract we needed a way to do it programmtically we use it in our updateIdOfDeposit method.
 # 4. Events
-    We use events for 2 things, emmiting a deposit event that will be verified at the moment of withdraw and emiiting a nullifier event to avoid double spending. 
+ We use events for 2 things, emmiting a deposit event that will be verified at the moment of withdraw and emiiting a nullifier event to avoid double spending. 
 # 5. Pre-conditions (account)
-    We use Pre-conditions to verify that an account has enough balance to deposit
+We use Pre-conditions to verify that an account has enough balance to deposit
 # 6. Pre-conditions (network)
-    We use network Pre-conditions in our withdraw function,withdraws cannot be done before an hour of deposit, this is because we need to wait for transaction times to be completed before allowing something to withdraw, this allows us to be protected from corrupted withdraws. 
+We use network Pre-conditions in our withdraw function,withdraws cannot be done before an hour of deposit, this is because we need to wait for transaction times to be completed before allowing something to withdraw, this allows us to be protected from corrupted withdraws. 
 # 7. Permissions
    - URI
    - Set Token Symbol
@@ -83,9 +84,9 @@ Read more here (https://github.com/Sr-santi/CLI-for-Private-Solutions-using-ZK-p
    We use Permission for both of our contracts MinadoTestApp and our TokenContract this is extremly important to avoid changes on the state of our app, avoiding malicious user sending or recieving tokens, also changing the nonce and other potential problems. 
 
 # 8. Deploy Smart Contract
-    We deployed both of our smart contracts to Berkley
+We deployed both of our smart contracts to Berkley
 # 9. Tokens
-    We use all the cool features for customized tokens in our Token contract😎.
+We use all the cool features for customized tokens in our Token contract😎.
 
 ## How to deploy our zkApp(s)
 

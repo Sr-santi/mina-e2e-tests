@@ -442,23 +442,23 @@ describe('Minado E2E tests', () => {
   /**
    * Withdraw tests
    */
-  // it('Test for the parse note function ', async () => {
-  //   let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
-  //   let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
-  //   let exampleObject = {
-  //       currency:'Mina',
-  //       amount: new UInt64(1),
-  //       nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
-  //       secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
-  //   }
-  //   let parsedNote = parseNoteString(exampleNote)
-  //   expect(exampleObject).toStrictEqual(parsedNote)
-  //   let error =new Error('The note has invalid format');
-  //   const errorFunction = () => {
-  //     parseNoteString(wrongNote)
-  //   };
-  //   expect(errorFunction).toThrow(error)
-  // });
+  it('Test for the parse note function ', async () => {
+    let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+    let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+    let exampleObject = {
+        currency:'Mina',
+        amount: new UInt64(1),
+        nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
+        secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
+    }
+    let parsedNote = parseNoteString(exampleNote)
+    expect(exampleObject).toStrictEqual(parsedNote)
+    let error =new Error('The note has invalid format');
+    const errorFunction = () => {
+      parseNoteString(wrongNote)
+    };
+    expect(errorFunction).toThrow(error)
+  });
 
   it('Test for creating a deposit object with a given nullifier and secret', async () => {
     console.time('createDepositTest');
@@ -475,38 +475,38 @@ describe('Minado E2E tests', () => {
     console.timeEnd('createDepositTest');
   });
 
-  it('Test for validating that a deposit exists in the events and it is correct ', async () => {
-    console.time('validatingDepositExistTest');
-    let nullifier = Field(
-      '11585209139878798932357986174060311467267135906027654678156605460441251706059'
-    );
-    let secret = Field(
-      '5998354546491085671758129686091866500834021114313521641566938626173650038487'
-    );
-    let corruptedSecret = Field(
-      '5998354546491085671758129686091866500834021114313521641566938626173650038487'
-    );
-    let depositExample = {
-      nullifier,
-      secret,
-      commitment: createCommitment(nullifier, secret),
-    };
-    let corruptedDepositExample = {
-      nullifier: nullifier,
-      secret: corruptedSecret,
-      commitment: createCommitment(nullifier, secret),
-    };
-    console.log('commitment', depositExample.commitment.toString());
-    console.timeEnd('validatingDepositExistTest');
-    // await validateProof(depositExample);
-    // const error = new Error(
-    //   'The deposit event is corrupt please input a valid note'
-    // );
-    // const errorFunction = async () => {
-    //   await validateProof(corruptedDepositExample);
-    // };
-    // expect(errorFunction).toThrow(error);
-  });
+  // it('Test for validating that a deposit exists in the events and it is correct ', async () => {
+  //   console.time('validatingDepositExistTest');
+  //   let nullifier = Field(
+  //     '11585209139878798932357986174060311467267135906027654678156605460441251706059'
+  //   );
+  //   let secret = Field(
+  //     '5998354546491085671758129686091866500834021114313521641566938626173650038487'
+  //   );
+  //   let corruptedSecret = Field(
+  //     '5998354546491085671758129686091866500834021114313521641566938626173650038487'
+  //   );
+  //   let depositExample = {
+  //     nullifier,
+  //     secret,
+  //     commitment: createCommitment(nullifier, secret),
+  //   };
+  //   let corruptedDepositExample = {
+  //     nullifier: nullifier,
+  //     secret: corruptedSecret,
+  //     commitment: createCommitment(nullifier, secret),
+  //   };
+  //   console.log('commitment', depositExample.commitment.toString());
+  //   console.timeEnd('validatingDepositExistTest');
+  //   // await validateProof(depositExample);
+  //   // const error = new Error(
+  //   //   'The deposit event is corrupt please input a valid note'
+  //   // );
+  //   // const errorFunction = async () => {
+  //   //   await validateProof(corruptedDepositExample);
+  //   // };
+  //   // expect(errorFunction).toThrow(error);
+  // });
 
   it(
     'Claim tokens and update rewards',
