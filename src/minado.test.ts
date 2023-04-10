@@ -12,6 +12,7 @@ import {
   PrivateKey,
   fetchAccount,
   Signature,
+  AccountUpdate,
 } from 'snarkyjs';
 import { test } from './MinadoTestApp.js';
 import { TokenContract } from './mint.js';
@@ -61,6 +62,7 @@ describe('Minado E2E tests', () => {
   let verificationKey: string;
   let defaultFee = 100_000_000;
   let defaultFee2 = 200_000_000;
+  let defaultFee3 = 300_000_000;
 
   beforeAll(async () => {
     const isBerkeley = process.env.TEST_NETWORK === 'true';
@@ -246,11 +248,116 @@ describe('Minado E2E tests', () => {
     }
   }
 
-  // ------------------------------------
+  // deposit functions ------------------------------------------------------------
+  /**
+   * Emits deposit action
+   */
+  async function emitDepositAction() {
+    /**
+     * Emiting an action to update the depositId
+     */
+    let actionTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee },
+      () => {
+        zkAppTest.updateIdOfDeposit();
+      }
+    );
+    await actionTx.prove();
+    await actionTx.sign([minadoPk, minadoPrivK]).send;
+    console.log('Id of deposit updated and transaction send');
+  }
 
   /**
-   * DEPOSIT LOGIC TESTS
+   * Emits a nullifier event with it's commitment and timestamp
    */
+  async function emitDepositEvent(commitment: Field, timeStamp: UInt64) {
+    let eventsTx = await Mina.transaction(
+      { sender: minadoPk, fee: defaultFee3 },
+      () => {
+        zkAppTest.emitDepositEvent(commitment, timeStamp);
+      }
+    );
+    await eventsTx.prove();
+    await eventsTx.sign([minadoPk, minadoPrivK]).send();
+    console.log(`Deposit event emmited `);
+  }
+
+  /**
+   * After the commitment is emitted in an event and the note is returned, the money should be send to the zkApp account
+   * @param sender
+   * @param amount
+   */
+  async function sendFundstoMixer(
+    senderPrivKey: PrivateKey,
+    amount: any,
+    sender: PublicKey
+  ) {
+    let tx = await Mina.transaction(
+      { sender: sender, fee: defaultFee2 },
+      () => {
+        let update = AccountUpdate.createSigned(sender);
+        //The userAddress is funced
+        let contractAddress = PublicKey.fromBase58(
+          zkAppSmartContractTestAddress
+        );
+        update.send({ to: contractAddress, amount: amount });
+        console.log('Sendind Funds to Minado');
+        //Parece que la zkapp no puede recibir fondos
+      }
+    );
+    await tx.prove();
+    await tx.sign([minadoPk, senderPrivKey]).send();
+    console.log('Funds sent to minado');
+  }
+
+  /**
+   * Deposit function
+   * From a user account transfer funds to the zKApp smart contract, a nullifier will be created and events will be emmited
+   * @param userAccount
+   * @returns noteString That will be stored by the user
+   */
+  async function deposit(
+    userAccount: PrivateKey,
+    ammount: number,
+    sender: PublicKey
+  ) {
+    //  Creating nullifier and nullifieremmiting event
+    console.log("Feching account's zkAppTest");
+    await fetchAccount({ publicKey: zkAppSmartContractTestAddress });
+    let nullifierHash = await createNullifier(minadoPk);
+    console.log('NullifierHash', nullifierHash.toString());
+    //Creatting deposit commitment
+    let secret = Field.random();
+    let commitment = await createCommitment(nullifierHash, secret);
+    console.log('commitment', commitment.toString());
+    await sendFundstoMixer(userAccount, ammount, sender);
+    //A note is created and send in a deposit event
+    const note = {
+      currency: 'Mina',
+      amount: new UInt64(ammount),
+      nullifier: nullifierHash,
+      secret: secret,
+    };
+    //Generating notestring
+    const noteString = generateNoteString(note);
+    //TODO:CHANGE
+    let timeStamp = UInt64.fromFields([Field(0)]);
+    //Emiting our deposit event
+    await emitDepositEvent(commitment, timeStamp);
+    //Emiting deposit action for updating IDs
+    await emitDepositAction();
+    console.log(`Note string ${noteString}`);
+    const mintAmount = UInt64.from(1);
+    const mintSignature = Signature.create(
+      minadoPrivK,
+      mintAmount.toFields().concat(minadoPk.toFields())
+    );
+    //Minting a token as a reward to the user
+    await mintToken(sender, mintSignature);
+    return noteString;
+  }
+
+  // ------------------------------------
 
   it('Test for emitNullifier event method and the emit deposit event  ', async () => {
     console.time('emitNullifierAndEventDepositTest');
@@ -275,23 +382,23 @@ describe('Minado E2E tests', () => {
     }
   });
 
-  // it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
-  //   let amount = 20;
-  //   let nullifier = createNullifier(minadoPk);
-  //   let secret = Field.random();
+  /*   it('For a Deposit With a given object it generates a notestring in the correct format', async () => {
+    let amount = 20;
+    let nullifier = createNullifier(minadoPk);
+    let secret = Field.random();
 
-  //   const note = {
-  //     currency: 'Mina',
-  //     amount: new UInt64(amount),
-  //     nullifier: nullifier,
-  //     secret: secret,
-  //   };
-  //   const noteString = generateNoteString(note);
-  //   const noteRegex =
-  //     /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
+    const note = {
+      currency: 'Mina',
+      amount: new UInt64(amount),
+      nullifier: nullifier,
+      secret: secret,
+    };
+    const noteString = generateNoteString(note);
+    const noteRegex =
+      /Minado&(?<currency>\w+)&(?<amount>[\d.]+)&(?<nullifier>[0-9a-fA-F]+)%(?<secret>[0-9a-fA-F]+)&Minado/g;
 
-  //   expect(noteString).toMatch(noteRegex);
-  // });
+    expect(noteString).toMatch(noteRegex);
+  }); */
 
   it('With a given nullifier and secret it generates a commitment that is the poseidon hash of these two values', async () => {
     console.time('createCommitmentTest');
@@ -352,17 +459,21 @@ describe('Minado E2E tests', () => {
   //   };
   //   expect(errorFunction).toThrow(error)
   // });
-  // it('Test for creating a deposit object with a given nullifier and secret', async () => {
-  //   let nullifier =Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520')
-  //   let secret =Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
-  //   let depositExample= {
-  //   nullifier,
-  //   secret,
-  //   commitment: createCommitment(nullifier, secret),
-  //   }
-  //   let depositReturned = createDeposit(nullifier,secret)
-  //   expect(depositExample).toStrictEqual(depositReturned)
-  // });
+
+  it('Test for creating a deposit object with a given nullifier and secret', async () => {
+    console.time('createDepositTest');
+    const noteString = await deposit(minadoPrivK, 1, minadoPk);
+    const note = parseNoteString(noteString);
+
+    let depositExample = {
+      nullifier: note.nullifier,
+      secret: note.secret,
+      commitment: createCommitment(note.nullifier, note.secret),
+    };
+    let depositReturned = createDeposit(note.nullifier, note.secret);
+    expect(depositExample).toStrictEqual(depositReturned);
+    console.timeEnd('createDepositTest');
+  });
 
   it('Test for validating that a deposit exists in the events and it is correct ', async () => {
     console.time('validatingDepositExistTest');
