@@ -71,7 +71,7 @@ describe('Minado E2E tests', () => {
     if (isBerkeley) {
       Blockchain = Mina.Network({
         mina: 'https://proxy.berkeley.minaexplorer.com/graphql',
-        archive: 'https://archive.berkeley.minaexplorer.com/',
+        archive: 'https://archive-node-api.p42.xyz/',
       });
       minadoPrivK = PrivateKey.fromBase58(
         'EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC'
