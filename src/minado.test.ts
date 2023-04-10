@@ -264,7 +264,7 @@ describe('Minado E2E tests', () => {
       }
     );
     await actionTx.prove();
-    await actionTx.sign([minadoPk, minadoPrivK]).send;
+    await actionTx.sign([minadoPrivK]).send;
     console.log('Id of deposit updated and transaction send');
   }
 
@@ -279,7 +279,7 @@ describe('Minado E2E tests', () => {
       }
     );
     await eventsTx.prove();
-    await eventsTx.sign([minadoPk, minadoPrivK]).send();
+    await eventsTx.sign([minadoPrivK]).send();
     console.log(`Deposit event emmited `);
   }
 
