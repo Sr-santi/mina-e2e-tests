@@ -233,6 +233,7 @@ async function deposit(
   );
   //Minting a token as a reward to the user
   await mintToken(sender, mintSignature);
+  console.log('Deploy succesful')
   return noteString;
 }
 //-----------------------------------------

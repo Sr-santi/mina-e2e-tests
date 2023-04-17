@@ -1,7 +1,9 @@
 # Mina-e2e testing
 
 ## Contracts
-## My application and what it does? 
+
+## My application and what it does?
+
 Our application is a shorter and simpler version of Minado, here we explain what Minado does👇🏻👇🏻
 
 ### Minado🔒: Zk Privacy Solution on Mina Protocol
@@ -17,7 +19,7 @@ We envision a world where people can control their data in a smooth and low-effo
 
 ### How does it work?👇🏻🧑🏻‍💻
 
-The protocol is divided into 2 parts 
+The protocol is divided into 2 parts
 
 ## -Deposit logic:
 
@@ -41,68 +43,87 @@ In the deposit, the following actions are executed.
 
 4. A note which we can understand as a Zk-proof of the commitment is provided to the user to store it.
 5. Funds are sent from the user account to the minadoZkAppAccount
-6. We reward our users with 1 MINTK. 
+6. We reward our users with 1 MINTK.
 
 ## -Validation and Withdraw (Circuit)
 
 1. The user provides the note.
 
-2. With the note we reconstruct the commitment and verify that is correct based on the deposit event. 
+2. With the note we reconstruct the commitment and verify that is correct based on the deposit event.
 
-3. We verify that the note has not been spent using the Nullifier and checking the Nullifier Events. 
+3. We verify that the note has not been spent using the Nullifier and checking the Nullifier Events.
 
-4. If everything is correct withdrawand emit a nullifier event. 
+4. If everything is correct withdrawand emit a nullifier event.
 
+### Want to learn more?
 
-### Want to learn more? 
 Read more here (https://github.com/Sr-santi/CLI-for-Private-Solutions-using-ZK-proofs)
-
-
-
 
 ## Surface Areas and how they are being covered
 
-# 1. Recursion 
-We used recursion to verify a Signature in a SM method that we use  to validate that the rewards given after someone deposited were distributed correctly.  
-    
+# 1. Recursion
+
+We used recursion to verify a Signature in a SM method that we use to validate that the rewards given after someone deposited were distributed correctly.
+
 # 2. Call stack composability
+
 We used Call-stack composability to mint a token from our Mint contract, we added a method to our main MinadoTestApp contract called mintMinadoToken() this method initializes the token contract and calls the mint fuction from it.
+
 # 3. Actions
+
 We use actions to update the ID of deposit, as we track the IDs and number of deposits in our contract we needed a way to do it programmtically we use it in our updateIdOfDeposit method.
+
 # 4. Events
- We use events for 2 things, emmiting a deposit event that will be verified at the moment of withdraw and emiiting a nullifier event to avoid double spending. 
+
+We use events for 2 things, emmiting a deposit event that will be verified at the moment of withdraw and emiiting a nullifier event to avoid double spending.
+
 # 5. Pre-conditions (account)
+
 We use Pre-conditions to verify that an account has enough balance to deposit
+
 # 6. Pre-conditions (network)
-We use network Pre-conditions in our withdraw function,withdraws cannot be done before an hour of deposit, this is because we need to wait for transaction times to be completed before allowing something to withdraw, this allows us to be protected from corrupted withdraws. 
+
+We use network Pre-conditions in our withdraw function,withdraws cannot be done before an hour of deposit, this is because we need to wait for transaction times to be completed before allowing something to withdraw, this allows us to be protected from corrupted withdraws.
+
 # 7. Permissions
-   - URI
-   - Set Token Symbol
-   - Set Timing
-   - Set Voting For
-   - Set Delegate
-   We use Permission for both of our contracts MinadoTestApp and our TokenContract this is extremly important to avoid changes on the state of our app, avoiding malicious user sending or recieving tokens, also changing the nonce and other potential problems. 
+
+- URI
+- Set Token Symbol
+- Set Timing
+- Set Voting For
+- Set Delegate
+  We use Permission for both of our contracts MinadoTestApp and our TokenContract this is extremly important to avoid changes on the state of our app, avoiding malicious user sending or recieving tokens, also changing the nonce and other potential problems.
 
 # 8. Deploy Smart Contract
+
 We deployed both of our smart contracts to Berkley
+
 # 9. Tokens
+
 We use all the cool features for customized tokens in our Token contract😎.
 
 ## How to deploy our zkApp(s)
 
-# To deploy our contracts just run 
+# To deploy our contracts just run
+
 ```sh
-npm run deploy 
+npm run deploy
 ```
+
 And change the lines 43 and 50 depending on which smart contract you want to deploy, you have to options our test smart contract (which contains all the logic for deposit and withdraws) and our Token smart contract (which contains all the logic for Tokes).
 
-## Public and verification key that was used 
+At snarkyjs@0.9.8 deploys are not working we are checking what is the problem, however with versions before that one everything is working as expected.
+
+## Public and verification key that was used
+
 Public Key: B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z
+VERFICATION KEY: EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC
+
+## Estimated times
+
 # Notes
 
 Please feel free to reach out with feedback to ()
-
-
 
 ## Usage
 
@@ -114,16 +135,19 @@ npm run build
 
 ### How to run tests
 
+PLEASE RUN THESE TESTS USING SNARKYJS@0,9,8
+
 ```sh
 npm run test
 npm run testw # watch mode
 ```
 
-### How to run coverage
+## Estimated times
 
-```sh
-npm run coverage
-```
+createDepositTest: 186731 ms === 186.7s
+createCommitmentTest: 47 ms === 0.047s
+validatingDepositExistTest: 9 ms === 0.009s
+claimTokensTest: 212257 ms === 212.257s
 
 ### License
 
