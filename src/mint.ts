@@ -26,6 +26,7 @@ export class TokenContract extends SmartContract {
   deploy(args: DeployArgs) {
     super.deploy(args);
 
+    this.account.tokenSymbol.set(tokenSymbol);
     const permissionToEdit = Permissions.proof();
 
     this.account.permissions.set({
@@ -41,7 +42,6 @@ export class TokenContract extends SmartContract {
    */
   @method init() {
     super.init();
-    this.account.tokenSymbol.set(tokenSymbol);
     this.totalAmountInCirculation.set(UInt64.zero);
     // default supply is 1000
     this.SUPPLY.set(UInt64.from(1000));
