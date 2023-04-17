@@ -14,10 +14,9 @@ import {
 import { TokenContract } from './mint.js';
 import { Program } from './zkProgram.js';
 // export {init}
-const zkAppSmartContractTestAddress =
-  'B62qkg13dU8dNZ46nMEz23mKJGqFNXKPXsYRKihY1PRFnLbp7dVtN5P';
-const tokenContractAddress =
-  'B62qnkitN4PSEAnta5YFaBzUEFAtiXSBNCTLBWo1FnxGWnAFaqgLLBY';
+
+const zkAppSmartContractTestAddress = process.env.MINADO_CONTRACT_ADDRESS || '';
+const tokenContractAddress = process.env.TOKEN_CONTRACT_ADDRESS || '';
 
 let minadoPk: PublicKey;
 let minadoPrivK: PrivateKey;

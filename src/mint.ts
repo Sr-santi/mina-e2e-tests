@@ -18,6 +18,7 @@ await isReady;
 
 export class TokenContract extends SmartContract {
   @state(UInt64) totalAmountInCirculation = State<UInt64>();
+  @state(UInt64) SUPPLY = State<UInt64>();
   /**
    * Deploy function
    * @param args  verification key
@@ -42,6 +43,8 @@ export class TokenContract extends SmartContract {
     super.init();
     this.account.tokenSymbol.set(tokenSymbol);
     this.totalAmountInCirculation.set(UInt64.zero);
+    // default supply is 1000
+    this.SUPPLY.set(UInt64.from(1000));
   }
   /**
    * Mint token function
@@ -55,10 +58,19 @@ export class TokenContract extends SmartContract {
     amount: UInt64,
     adminSignature: Signature
   ) {
+    const SUPPLY0 = this.SUPPLY.get();
+    this.SUPPLY.assertEquals(SUPPLY0);
+
     let totalAmountInCirculation = this.totalAmountInCirculation.get();
     this.totalAmountInCirculation.assertEquals(totalAmountInCirculation);
 
     let newTotalAmountInCirculation = totalAmountInCirculation.add(amount);
+
+    // check enough
+    SUPPLY0.sub(totalAmountInCirculation).assertGreaterThanOrEqual(
+      amount,
+      'restAmount is enough for amount'
+    );
 
     this.token.mint({
       address: receiverAddress,
@@ -90,10 +102,20 @@ export class TokenContract extends SmartContract {
    * @param amount
    */
   @method burn(addressToDecrease: PublicKey, amount: UInt64) {
+    const SUPPLY0 = this.SUPPLY.get();
+    this.SUPPLY.assertEquals(SUPPLY0);
+
+    const totalAmountInCirculation0 = this.totalAmountInCirculation.get();
+    this.totalAmountInCirculation.assertEquals(totalAmountInCirculation0);
+
     this.token.tokenOwner.x;
     this.token.burn({
       address: addressToDecrease,
       amount: amount,
     });
+
+    // reduce the total amount in circulation and the supply
+    this.SUPPLY.set(SUPPLY0.sub(amount));
+    this.totalAmountInCirculation.set(totalAmountInCirculation0.sub(amount));
   }
 }

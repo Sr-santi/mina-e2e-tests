@@ -20,16 +20,15 @@ import DepositClass from './models/DepositClass.js';
 import { Program, ProgramInput } from './zkProgram.js';
 await isReady;
 ///Setup
-const zkAppSmartContractTestAddress =
-  'B62qkg13dU8dNZ46nMEz23mKJGqFNXKPXsYRKihY1PRFnLbp7dVtN5P';
-const tokenContractAddress =
-  'B62qnkitN4PSEAnta5YFaBzUEFAtiXSBNCTLBWo1FnxGWnAFaqgLLBY';
+const zkAppSmartContractTestAddress = process.env.MINADO_CONTRACT_ADDRESS || '';
+const tokenContractAddress = process.env.TOKEN_CONTRACT_ADDRESS || '';
 
 //Variables
 let publicKeyTokenContract: PublicKey;
 let zkTokenContract: TokenContract;
 let zkAppTest: test;
 
+// -------------------------------------------
 /**
  * Types
  */
@@ -418,19 +417,19 @@ describe('Minado E2E tests', () => {
       try {
         // await initTok  `enInstance();
         const mintAmount = UInt64.from(1);
+        const totalAmountInCirculation0 =
+          zkTokenContract.totalAmountInCirculation.get();
+        expect(zkTokenContract.totalAmountInCirculation.get()).toEqual(
+          totalAmountInCirculation0
+        );
         const mintSignature = Signature.create(
           minadoPrivK,
           mintAmount.toFields().concat(publicKeyTokenContract.toFields())
         );
         await fetchAccount({
-          publicKey: 'B62qjHVWWc1WT1b6WSFeb8n8uNH8DoiaFnhF4bpFf5q6Dp9j6zr1EQN',
+          publicKey: tokenContractAddress,
         });
         await mintToken(minadoPk, mintSignature);
-        // let totalAmountInCirculation =
-        //   zkTokenContract.totalAmountInCirculation.get();
-        // zkTokenContract.totalAmountInCirculation.assertEquals(
-        //   totalAmountInCirculation
-        // );
         console.timeEnd('mintTokenTest passed');
       } catch (error: any) {
         console.error(JSON.stringify(error?.response?.data?.errors, null, 2));
@@ -445,37 +444,47 @@ describe('Minado E2E tests', () => {
    * Withdraw tests
    */
   it('Test for the parse note function ', async () => {
-    let exampleNote='Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
-    let wrongNote =' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado'
+    let exampleNote =
+      'Minado&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado';
+    let wrongNote =
+      ' Error&Mina&1&7812087851405294542981963277649824002238917083437839771374645972862540599520%17743784939239259721543222227098911701166012122860283577281232882212532863426&Minado';
     let exampleObject = {
-        currency:'Mina',
-        amount: new UInt64(1),
-        nullifier:Field ('7812087851405294542981963277649824002238917083437839771374645972862540599520' ),
-        secret: Field('17743784939239259721543222227098911701166012122860283577281232882212532863426')
-    }
-    let parsedNote = parseNoteString(exampleNote)
-    expect(exampleObject).toStrictEqual(parsedNote)
-    let error =new Error('The note has invalid format');
-    const errorFunction = () => {
-      parseNoteString(wrongNote)
+      currency: 'Mina',
+      amount: new UInt64(1),
+      nullifier: Field(
+        '7812087851405294542981963277649824002238917083437839771374645972862540599520'
+      ),
+      secret: Field(
+        '17743784939239259721543222227098911701166012122860283577281232882212532863426'
+      ),
     };
-    expect(errorFunction).toThrow(error)
+    let parsedNote = parseNoteString(exampleNote);
+    expect(exampleObject).toStrictEqual(parsedNote);
+    let error = new Error('The note has invalid format');
+    const errorFunction = () => {
+      parseNoteString(wrongNote);
+    };
+    expect(errorFunction).toThrow(error);
   });
 
-  it('Test for creating a deposit object with a given nullifier and secret', async () => {
-    console.time('createDepositTest');
-    const noteString = await deposit(minadoPrivK, 1, minadoPk);
-    const note = parseNoteString(noteString);
+  it(
+    'Test for creating a deposit object with a given nullifier and secret',
+    async () => {
+      console.time('createDepositTest');
+      const noteString = await deposit(minadoPrivK, 1, minadoPk);
+      const note = parseNoteString(noteString);
 
-    let depositExample = {
-      nullifier: note.nullifier,
-      secret: note.secret,
-      commitment: createCommitment(note.nullifier, note.secret),
-    };
-    let depositReturned = createDeposit(note.nullifier, note.secret);
-    expect(depositExample).toStrictEqual(depositReturned);
-    console.timeEnd('createDepositTest');
-  }, 5*60*1000);
+      let depositExample = {
+        nullifier: note.nullifier,
+        secret: note.secret,
+        commitment: createCommitment(note.nullifier, note.secret),
+      };
+      let depositReturned = createDeposit(note.nullifier, note.secret);
+      expect(depositExample).toStrictEqual(depositReturned);
+      console.timeEnd('createDepositTest');
+    },
+    5 * 60 * 1000
+  );
 
   // it('Test for validating that a deposit exists in the events and it is correct ', async () => {
   //   console.time('validatingDepositExistTest');
