@@ -96,8 +96,13 @@ npm run deploy
 ```
 And change the lines 43 and 50 depending on which smart contract you want to deploy, you have to options our test smart contract (which contains all the logic for deposit and withdraws) and our Token smart contract (which contains all the logic for Tokes).
 
+At snarkyjs@0.9.8 deploys are not working we are checking what is the problem, however with versions before that one everything is working as expected. 
+
 ## Public and verification key that was used 
 Public Key: B62qn3vM657WqhbgCtuxuxLjL6fSEkSu1CTJqSQA7uhcR9gc3uEKT1Z
+VERFICATION KEY: EKDxPsv3rnVvk8MVp7A5UNaL9pTVXnQkYdikuas3pHPHJyBCn4YC
+## Estimated times 
+
 # Notes
 
 Please feel free to reach out with feedback to ()
@@ -113,17 +118,19 @@ npm run build
 ```
 
 ### How to run tests
+PLEASE RUN THESE TESTS USING SNARKYJS@0,9,8
 
 ```sh
 npm run test
 npm run testw # watch mode
 ```
+## Estimated times 
 
-### How to run coverage
-
-```sh
-npm run coverage
-```
+emitNullifierAndEventDepositTest: 2275 ms === 2.275s
+createCommitmentTest: 47 ms === 0.047s
+mintTokenTest: 102859 ms === 102.859s
+validatingDepositExistTest: 9 ms === 0.009s
+claimTokensTest: 212257 ms === 212.257s
 
 ### License
 
